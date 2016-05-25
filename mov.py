@@ -1,3 +1,2 @@
-import numpy
-
-input()
+import OpenGL
+import PIL
