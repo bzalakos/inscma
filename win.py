@@ -29,15 +29,16 @@ def draw():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glLoadIdentity()
 
+    glMatrixMode(GL_PROJECTION)
+    glRotatef(0, 1, 0, 1)
+    glMatrixMode(GL_MODELVIEW)
+
     glBegin(GL_POLYGON)
-    #for x in range(10):
-    #    x *= pi / 10
-    #    y = (x % 2) + 1
-    #    glVertex3f(cos(x) / y, -sin(x) / y, 0)
-    glVertex3f(0.0, 1.0, 0.0)           # Top
-	glVertex3f(1.0, -1.0, 0.0)          # Bottom Right
-	glVertex3f(-1.0, -1.0, 0.0)
-    
+    for x in range(12):
+        y = 1 #(x % 2) + 1
+        x *= 2 * pi / 12
+        glColor3f(cos(x), cos(x + (2 * pi / 3)), cos(x + (4 * pi / 3)))
+        glVertex3f(cos(x) / y, -sin(x) / y, -5)    
     glEnd()
     glutSwapBuffers()
 
