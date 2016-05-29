@@ -1,2 +1,0 @@
-import OpenGL
-import PIL
