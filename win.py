@@ -1,10 +1,13 @@
-from OpenGL.GL import *
-from OpenGL.GLU import *
-from OpenGL.GLUT import *
 import sys
 from math import sin, cos, atan2, pi
 
+from OpenGL.GL import *
+from OpenGL.GLU import *
+from OpenGL.GLUT import *
+
 window = 0
+colro = 0
+sides = 4
 
 def rematr(wid, hig):
     glMatrixMode(GL_PROJECTION)
@@ -17,7 +20,7 @@ def init(wid, hig):
     glClearDepth(1.0)
     glDepthFunc(GL_LESS)
     glEnable(GL_DEPTH_TEST)
-    glShadeModel(GL_SMOOTH)   
+    glShadeModel(GL_SMOOTH)
     rematr(wid, hig)
 
 def resize(wid, hig):
@@ -26,6 +29,8 @@ def resize(wid, hig):
     rematr(wid, hig)
 
 def draw():
+    global colro
+    colro += 0.005
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glLoadIdentity()
 
@@ -34,17 +39,17 @@ def draw():
     glMatrixMode(GL_MODELVIEW)
 
     glBegin(GL_POLYGON)
-    for x in range(12):
-        y = (((x % 2) + 1) / 5) + 3
-        x *= 2 * pi / 12
-        glColor3f(cos(x), cos(x + (2 * pi / 3)), cos(x + (4 * pi / 3)))
-        glVertex3f(cos(x) / y, -sin(x) / y, -5)    
+    for x in range(sides):
+        y = 1 #(x % 2) + 1
+        x *= 2 * pi / sides
+        glColor3f((sin(x + colro) + 1) / 2, (sin(x + colro + (2 * pi / 3)) + 1) / 2, (sin(x + colro + (4 * pi / 3)) + 1) / 2)
+        glVertex3f(cos(x) / y, -sin(x) / y, -5)
     glEnd()
     glutSwapBuffers()
 
 def main():
     global window
-
+	
     glutInit(sys.argv)
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH)
     glutInitWindowSize(640, 480)
