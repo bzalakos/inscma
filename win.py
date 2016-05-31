@@ -35,7 +35,7 @@ def draw():
 
     glBegin(GL_POLYGON)
     for x in range(12):
-        y = 1 #(x % 2) + 1
+        y = (((x % 2) + 1) / 5) + 3
         x *= 2 * pi / 12
         glColor3f(cos(x), cos(x + (2 * pi / 3)), cos(x + (4 * pi / 3)))
         glVertex3f(cos(x) / y, -sin(x) / y, -5)    
@@ -52,7 +52,7 @@ def main():
     glutDisplayFunc(draw)
     glutIdleFunc(draw)
     glutReshapeFunc(resize)
-    init(640 ,480)
+    init(640, 480)
     glutMainLoop()
 
 main()
