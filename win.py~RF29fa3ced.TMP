@@ -31,7 +31,7 @@ def resize(wid, hig):
 
 def draw():
     global colro
-    colro += 0.002
+    colro += 0.005
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glLoadIdentity()
 
@@ -39,7 +39,7 @@ def draw():
     glRotatef(0, 1, 0, 1)
     glMatrixMode(GL_MODELVIEW)
 
-    plus = 0.5
+    plus = 1
     divide = 2
 
     glBegin(GL_POLYGON)
@@ -49,24 +49,11 @@ def draw():
         glColor3f((sin(x + colro) + plus) / divide, (sin(x + colro + (2 * pion3)) + plus) / divide, (sin(x + colro + (4 * pion3)) + plus) / divide)
         glVertex3f(cos(x + colro) / y, -sin(x + colro) / y, -5)
     glEnd()
-
-    room = [[6, 2, 2, 3],
-            [4, 0, 0, 1], 
-            [4, 0, 0, 1], 
-            [12,8, 8, 9]]
-
-    glBegin(GL_QUADS)
-    glColor3f(1,1,1)
-
-    for y in room:
-        for x in y:
-            
-    glEnd()
     glutSwapBuffers()
 
 def main():
     global window
-
+	
     glutInit(sys.argv)
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH)
     glutInitWindowSize(640, 480)
