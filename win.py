@@ -12,6 +12,41 @@ colro = 0
 sides = 3
 pion3 = pi / 3
 
+walls = [[(-1, -1, -1), (1, -1, -1), (1, -1, 1), (-1, -1, 1), \
+ 		(-1, 1, -1), (1, 1, -1), (1, 1, 1), (-1, 1, 1)], \
+	[(1, 1, -1), (1, 1, 1), (1, -1, 1), (1, -1, -1)], \
+	[(-1, 1, -1), (1, 1, -1), (1, -1, -1), (-1, -1, -1)], \
+	[(-1, 1, -1), (-1, 1, 1), (-1, -1, 1), (-1, -1, -1)], \
+	[(-1, 1, 1), (1, 1, 1), (1, -1, 1), (-1, -1, 1)]]
+
+room = [[6, 2, 2, 3], \
+		[4, 0, 0, 1], \
+		[4, 0, 0, 1], \
+		[12, 8, 8, 9]]
+
+def exyt(x, y, z, ls):
+	"""Inserts coordinate offsets into a list of tuples"""
+	return [tadd(t, (x, y, z)) for t in ls]
+
+def tadd(*args):
+	"""Element-wise addition of tuples."""
+	return tuple([sum(x) for x in zip(*args)])
+
+def ttim(scal, tup):
+	"""Scalar multiplication of tuples."""
+	return tuple([x * scal for x in tup])
+
+def wall(x, y, side):
+	"""Returns a list of tuples of floats that forms a square."""
+	scale, fill = 0.4, 0.9/2
+	offset = (0, 0, -5)
+	res = [ttim(fill, x) for x in walls[0]]
+	res += [ttim(fill, i) for i in [2 ^ x for x in range(4)] if side & i]
+	return exyt(x, y, 0, [tadd(ttim(x, scale), offset) for x in res])
+
+vs = [t for y, i in enumerate(room) for x, w in enumerate(i) for t in wall(x, y, w)]
+print(vs)
+
 def rematr(wid, hig):
 	"""Resets the projection matrix."""
 	GL.glMatrixMode(GL.GL_PROJECTION)
@@ -37,71 +72,22 @@ def resiz(wid, hig):
 
 def draw():
 	"""Put the main drawing code in here."""
-	global colro
-	colro += 0.002
 	GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 	GL.glLoadIdentity()
 
 	GL.glMatrixMode(GL.GL_PROJECTION)
-	GL.glRotatef(0, 1, 0, 1)
+	GL.glRotatef(0.001, 1, 0, 1)
 	GL.glMatrixMode(GL.GL_MODELVIEW)
 
-	# plus = 0.5
-	# divide = 2
 
-	# GL.glBegin(GL.GL_POLYGON)
-	# for x in range(sides):
-	# 	y = 0.5 #(x % 2) + 1
-	# 	x *= 2 * pi / sides
-	# 	GL.glColor3f((sin(x + colro) + plus) / divide, \
-	# 		(sin(x + colro + (2 * pion3)) + plus) / divide, \
-	# 		(sin(x + colro + (4 * pion3)) + plus) / divide)
-	# 	GL.glVertex3f(cos(x + colro) / y, -sin(x + colro) / y, -5)
-	# GL.glEnd()
-
-	room = [[6, 2, 2, 3], \
-			[4, 0, 0, 1], \
-			[4, 0, 0, 1], \
-			[12, 8, 8, 9]]
 
 	GL.glBegin(GL.GL_QUADS)
 	GL.glColor3f(1, 0, 0)
-
-	for y, i in enumerate(room):
-		for x, w in enumerate(i):
-			[GL.glVertex3f(*t) for t in wall(x, y, w)]
+	for v in vs:
+		GL.glVertex3f(*v)
 
 	GL.glEnd()
 	GLUT.glutSwapBuffers()
-
-def wall(x, y, side):
-	"""Returns a list of tuples of floats that forms a square."""
-	scale, fill = 0.4, 0.9/2
-	offset = (0, 0, -5)
-	defa = [(-fill, -fill, -fill), \
-		(fill, -fill, -fill), \
-		(fill, fill, -fill), \
-		(-fill, fill, -fill)]
-	res = defa[:]
-	res += [trod(side & i, defa) for i in [2 ^ x for x in range(4)] if side & i]
-	return exyt(x, y, [tadd(ttim(x, scale), offset) for x in res])
-
-def exyt(x, y, ls):
-	"""Inserts coordi"""
-	return [tadd(t, (x, y, 0)) for t in ls]
-
-def trod(ang, ls):
-	"""Rotates a tuple gruple"""
-	if ang == 1:
-		return []
-
-def tadd(*args):
-	"""Element-wise addition of tuples."""
-	return tuple([sum(x) for x in zip(*args)])
-
-def ttim(scal, tup):
-	"""Scalar multiplication of tuples."""
-	return tuple([x * scal for x in tup])
 
 def main():
 	"""Do all this upon running the script."""
