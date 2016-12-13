@@ -1,6 +1,7 @@
 """Draws a bunch of squares."""
 # Ignore the invalid variable naming. pylint: disable-msg=C0103
 import sys
+from random import random
 from math import sin, cos, atan2, pi
 
 import OpenGL.GL as GL
@@ -12,17 +13,19 @@ colro = 0
 sides = 3
 pion3 = pi / 3
 
-walls = [[(-1, -1, -1), (1, -1, -1), (1, -1, 1), (-1, -1, 1),
-          (-1, 1, -1), (1, 1, -1), (1, 1, 1), (-1, 1, 1)],
-         [(1, 1, -1), (1, 1, 1), (1, -1, 1), (1, -1, -1)],
-         [(-1, 1, -1), (1, 1, -1), (1, -1, -1), (-1, -1, -1)],
-         [(-1, 1, -1), (-1, 1, 1), (-1, -1, 1), (-1, -1, -1)],
-         [(-1, 1, 1), (1, 1, 1), (1, -1, 1), (-1, -1, 1)]]
+# Y is indeed the up/down axis.
+walls = [[(-1, -1, -1), (1, -1, -1), (1, -1, 1), (-1, -1, 1),   # floor
+          (-1, 1, -1), (1, 1, -1), (1, 1, 1), (-1, 1, 1)],      # plafond
+         [(1, 1, -1), (1, 1, 1), (1, -1, 1), (1, -1, -1)],      # +x
+         [(-1, 1, -1), (1, 1, -1), (1, -1, -1), (-1, -1, -1)],  # -z
+         [(-1, 1, -1), (-1, 1, 1), (-1, -1, 1), (-1, -1, -1)],  # -x
+         [(-1, 1, 1), (1, 1, 1), (1, -1, 1), (-1, -1, 1)],      # +z
+        ]
 
-room = [[6, 2, 2, 3],
-        [4, 0, 0, 1],
-        [4, 0, 0, 1],
-        [12, 8, 8, 9]]
+room = [[6, 2, 2, 3],   # x +->
+        [4, 0, 0, 1],   # z
+        [4, 0, 0, 1],   # +
+        [12, 8, 8, 9]]  # v
 
 def tadd(*args):
     """Element-wise addition of tuples."""
@@ -36,8 +39,8 @@ def wall(x, y, side):
     """Returns a list of tuples of floats that forms a square."""
     scale, fill = 0.8, 0.9/2
     offset = (0, 0, -5)
-    res = [ttim(fill, w) for w in walls[0]]
-    res += [ttim(fill, w) for i in range(4) for w in walls[i] if side & 2**i]
+    res = [ttim(fill, w) for w in walls[0]]     # Skip zero, that's the roofloor.
+    res += [ttim(fill, w) for i in range(4) for w in walls[i+1] if side & 2**i]
     return [tadd((x, 0, y), tadd(ttim(scale, r), offset)) for r in res]
 
 vs = [t for y, i in enumerate(room) for x, w in enumerate(i) for t in wall(x, y, w)]
@@ -56,6 +59,14 @@ def init(wid, hig):
     GL.glDepthFunc(GL.GL_LESS)
     GL.glEnable(GL.GL_DEPTH_TEST)
     GL.glShadeModel(GL.GL_SMOOTH)
+    GL.glEnable(GL.GL_TEXTURE_2D)
+    GL.glEnable(GL.GL_LIGHTING)
+    GL.glEnable(GL.GL_LIGHT1)
+    GL.glLight(GL.GL_LIGHT1, GL.GL_DIFFUSE, 0.5, 0.5, 0.5, 0.5)
+    GL.glLight(GL.GL_LIGHT1, GL.GL_SPECULAR, 0.5, 0.5, 0.5, 0.5)
+    # GL.glLight(GL.GL_LIGHT1, GL.GL_POSITION, 0, 0, 1, 0)
+    GL.glMaterial(GL.GL_FRONT_AND_BACK, GL.GL_SPECULAR, 0.5)
+    GL.glMaterial(GL.GL_FRONT_AND_BACK, GL.GL_DIFFUSE, 0.2)
     rematr(wid, hig)
 
 def resiz(wid, hig):
@@ -71,7 +82,7 @@ def draw():
     GL.glLoadIdentity()
 
     GL.glMatrixMode(GL.GL_PROJECTION)
-    GL.glRotatef(0.001, 1, 0, 1)
+    GL.glRotatef(0.01, 0, 1, 0)
     GL.glMatrixMode(GL.GL_MODELVIEW)
 
     GL.glBegin(GL.GL_QUADS)
@@ -81,6 +92,7 @@ def draw():
         GL.glVertex3f(*v)
 
     GL.glEnd()
+
     GLUT.glutSwapBuffers()
 
 def main():
