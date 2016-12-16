@@ -3,14 +3,17 @@
 import sys
 import time
 # from random import random
+import os
 from math import pi#, sin#, cos, atan2
+from PIL import Image
 from numpy import array
 
 import OpenGL.GL as GL
 from OpenGL.arrays import vbo
 from OpenGL.GL import shaders
-# import OpenGL.GLU as GLU
 import OpenGL.GLUT as GLUT
+
+os.chdir(os.path.dirname(__file__))
 
 window = 0
 colro = 0
@@ -48,8 +51,18 @@ def wall(x, y, side):
     return [tadd((x, 0, y), tadd(ttim(scale, r), offset)) for r in res]
 
 # vs = [t for y, i in enumerate(room) for x, w in enumerate(i) for t in wall(x, y, w)]
-vs = [(0.1, 0.1, 0, 1, 1, 1), (0.1, -0.1, 0, 1, 1, 1),
-      (-0.1, -0.1, 0, 1, 1, 1), (-0.1, 0.1, 0, 1, 1, 1)]
+vs = [(+0.1, +0.1, +0.0,
+       +1.0, +1.0, +0.0,
+       +0.0, +0.0),
+      (+0.1, -0.1, +0.0,
+       +1.0, +0.0, +0.0,
+       +0.0, +1.0),
+      (-0.1, -0.1, +0.0,
+       +0.0, +0.0, +1.0,
+       +1.0, +0.0),
+      (-0.1, +0.1, +0.0,
+       +0.0, +1.0, +0.0,
+       +1.0, +1.0)]
 
 def rematr(wid, hig):
     """Resets the projection matrix."""
@@ -70,6 +83,17 @@ def init(wid, hig):
     GL.glEnable(GL.GL_TEXTURE_2D)
     rematr(wid, hig)
 
+    # Import a Texture.
+    with Image.open('wall.png') as i:
+        ix, iy, im = i.size[0], i.size[1], i.tobytes('raw', 'RGBX', 0, -1)
+        # ce, en, fl, ph, st,
+        wa = GL.glGenTextures(1)
+        GL.glBindTexture(GL.GL_TEXTURE_2D, wa)
+        GL.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGB, ix, iy, 0, GL.GL_RGB, GL.GL_UNSIGNED_BYTE,
+                        im)
+        GL.glGenerateMipmap(GL.GL_TEXTURE_2D)
+        GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
+
     # Set up the Shaders as well.
     vertex_shader = shaders.compileShader("""#version 330 core
     layout (location = 0) in vec3 position;
@@ -77,15 +101,19 @@ def init(wid, hig):
     uniform vec4 projectmatrix;
     out vec3 ourcolour;
     void main(){
-    gl_Position = vec4(position.xyz, 1.0);
+    gl_Position = vec4(position, 1.0);
     ourcolour = colour;
     }""", GL.GL_VERTEX_SHADER)
+    # if(colour == vec3(0,0,0))
+    #   ourcolour = vec3(1,0,0);
+    # else
+    # ourcolour = vec3(0,1,0);
     #uniform vec4 ourcolour;
     fragment_shader = shaders.compileShader("""#version 330 core
     in vec3 ourcolour;
     out vec4 colour;
     void main(){
-    colour = vec4(ourcolour.xyz, 1.0);
+    colour = vec4(ourcolour, 1.0);
     }""", GL.GL_FRAGMENT_SHADER)
     shaderp = shaders.compileProgram(vertex_shader, fragment_shader)
     GL.glUseProgram(shaderp)
@@ -101,21 +129,23 @@ def buff_vertices(verts: list) -> vbo.VBO:
     """Given a list of vertex-like objects, sets up a VBO and draws it. Then unsets the vbo."""
     v = vbo.VBO(array(verts, 'f'))
     v.bind()
-    GL.glEnableClientState(GL.GL_VERTEX_ARRAY)
-    GL.glEnableClientState(GL.GL_COLOR_ARRAY)
-    GL.glVertexPointer(3, GL.GL_FLOAT, 24, v)
-    GL.glColorPointer(3, GL.GL_FLOAT, 24, v+12)
+    GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, False, 32, v)
+    GL.glVertexAttribPointer(1, 3, GL.GL_FLOAT, False, 32, v+12)
+    GL.glVertexAttribPointer(2, 2, GL.GL_FLOAT, False, 32, v+24)
+    GL.glEnableVertexAttribArray(0)
+    GL.glEnableVertexAttribArray(1)
+    GL.glEnableVertexAttribArray(2)
     GL.glDrawArrays(GL.GL_QUADS, 0, len(verts))
     v.unbind()
-    GL.glDisableClientState(GL.GL_COLOR_ARRAY)
-    GL.glDisableClientState(GL.GL_VERTEX_ARRAY)
+    GL.glDisableVertexAttribArray(0)
+    GL.glDisableVertexAttribArray(1)
+    GL.glDisableVertexAttribArray(2)
 
 def draw():
     """Put the main drawing code in here."""
     global lasttime
     timedelta = time.time() - lasttime
     GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
-    GL.glLoadIdentity()
 
     buff_vertices(vs)
 
