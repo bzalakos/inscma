@@ -4,7 +4,7 @@ import sys
 import time
 # from random import random
 import os
-from math import pi, radians, tan, sin, cos, atan2
+from math import pi#, radians, tan, sin, cos, atan2
 from PIL import Image
 from numpy import array
 
@@ -27,7 +27,6 @@ def init(wid, hig):
     GL.glDepthFunc(GL.GL_LESS)
     GL.glEnable(GL.GL_DEPTH_TEST)
     GL.glShadeModel(GL.GL_SMOOTH)
-    GL.glEnable(GL.GL_TEXTURE_2D)
     shades()
     rematr(wid, hig)
     modelmtx = matrix.from_scale([1.8, 1.8, 1.8])
@@ -113,70 +112,111 @@ def shades():
     shaderp = shaders.compileProgram(vertex_shader, fragment_shader)
     GL.glUseProgram(shaderp)
 
+def mochae(latspe, rotspe):
+    """A whole bunch of Arcane Nonsense, because I just can't stand repeated code, apparently."""
+    # pylint: disable-msg=C0111
+    def trykey(code, todo):
+        if keys.get(code, False):
+            todo()
+    def ad(x):
+        def da():
+            chaem.pos += x * latspe
+        return da
+    def rt(x):
+        def tr():
+            chaem.dir = matrix.from_y_rotation(x) * chaem.dir
+        return tr
+    d = {b'w': ad(chaem.dir), b's': ad(-chaem.dir),
+         b'a': ad(-chaem.myx), b'd': ad(chaem.myx),
+         b'q': ad(chaem.myy), b'e': ad(-chaem.myy),
+         GLUT.GLUT_KEY_LEFT: rt(-rotspe), GLUT.GLUT_KEY_RIGHT: rt(rotspe)}
+    for x in d:
+        trykey(x, d[x])
+    GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'viewmatrix'), 1, False, chaem.lookat())
+
 def draw():
     """Put the main drawing code in here."""
-    global lasttime, modelmtx
-    timedelta = time.time() - lasttime
+    global lasttime
+    timedelta = time.clock() - lasttime or time.get_clock_info('clock').resolution
+    lasttime = time.clock()
+    mochae(5 * timedelta, (pi / 2) * timedelta) # Five 'meters', and one quarter turn per second.
+
     GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
-    # modelmtx = matrix.from_y_rotation(0.001/timedelta+1)
+    GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'modelmatrix'), 1, False, modelmtx)
     GL.glBindVertexArray(architincture)
+    GL.glEnable(GL.GL_TEXTURE_2D)
     GL.glBindTexture(GL.GL_TEXTURE_2D, terrain)
     GL.glDrawArrays(GL.GL_QUADS, 0, len(vs))
     GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
     GL.glBindVertexArray(0)
 
-    # rad = 10
-    # cx = sin(time.time()) * rad
-    # cy = cos(time.time()) * rad
-    # chaem.pos = vector([cx, 0, cy])
-    # GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'viewmatrix'), 1, False, chaem.lookat())
-
     origine()
 
     GLUT.glutSwapBuffers()
-    lasttime = time.time()
 
 def origine():
     """Draws a set of lines at 0,0,0"""
+    GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'modelmatrix'),
+                          1, False, matrix.identity())
+
     GL.glLineWidth(5)
-    GL.glBegin(GL.GL_LINES)
-    GL.glColor(1, 0, 0)
-    GL.glVertex(1, 0, 0)
-    GL.glVertex(-1, 0, 0)
-    GL.glColor(0, 1, 0)
-    GL.glVertex(0, 1, 0)
-    GL.glVertex(0, -1, 0)
-    GL.glColor(0, 0, 1)
-    GL.glVertex(0, 0, 1)
-    GL.glVertex(0, 0, -1)
-    GL.glEnd()
+    # No. I use the spaces for vertex subtype visibility. pylint: disable-msg=C0326
+    x = [[+1, 0, 0,  1.0, 0.0, 0.0,   0, 0,],
+         [-1, 0, 0,  1.0, 0.0, 0.0,   0, 0,],
+         [0, +1, 0,  0.0, 1.0, 0.0,   0, 0,],
+         [0, -1, 0,  0.0, 1.0, 0.0,   0, 0,],
+         [0, 0, +1,  0.0, 0.0, 1.0,   0, 0,],
+         [0, 0, -1,  0.0, 0.0, 1.0,   0, 0,],
+         # And, one for the Chaemera.
+         [*(chaem.pos + chaem.dir + [+0.1, 0, 0]),   1.0, 0.0, 0.0,   0, 0,],
+         [*(chaem.pos + chaem.dir + [-0.1, 0, 0]),   1.0, 0.0, 0.0,   0, 0,],
+         [*(chaem.pos + chaem.dir + [0, +0.1, 0]),   0.0, 1.0, 0.0,   0, 0,],
+         [*(chaem.pos + chaem.dir + [0, -0.1, 0]),   0.0, 1.0, 0.0,   0, 0,],
+         [*(chaem.pos + chaem.dir + [0, 0, +0.1]),   0.0, 0.0, 1.0,   0, 0,],
+         [*(chaem.pos + chaem.dir + [0, 0, -0.1]),   0.0, 0.0, 1.0,   0, 0,]]
+
+    v = vbo.VBO(array(x, 'f'))
+    v.bind()
+    GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, False, 32, v)
+    GL.glVertexAttribPointer(1, 3, GL.GL_FLOAT, False, 32, v+12)
+    GL.glVertexAttribPointer(2, 2, GL.GL_FLOAT, False, 32, v+24)
+    GL.glEnableVertexAttribArray(0)
+    GL.glEnableVertexAttribArray(1)
+    GL.glEnableVertexAttribArray(2)
+    GL.glBindTexture(GL.GL_TEXTURE_2D, blanktex)
+    GL.glDrawArrays(GL.GL_LINES, 0, len(x))
+    GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
+    v.unbind()
+    v.delete()
 
 def onkey(code, x, y):
-    """Alter Vue Mater"""
-    global chaem
-    d = {b'w': [0, 1, 0], b's': [0, -1, 0],
-         b'd': [1, 0, 0], b'a': [-1, 0, 0],
-         b'e': [0, 0, 1], b'q': [0, 0, -1],}
+    """Record keys"""
     if code == b'\x1b': # The Escape Key codevalue.
         exit()
-    chaem.pos += d.get(code, [0, 0, 0])
-    GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'viewmatrix'), 1, False, chaem.lookat())
+    keys[code] = True
+    x, y = x, y # blah.
+
+def offkey(code, x, y):
+    """Decord Keys"""
+    keys[code] = False
+    x, y = x, y     # bleh.
 
 def onmou(x, y):
     """Alter Moda Mater"""
-    global modelmtx, moux, mouy
-    modelmtx = modelmtx * matrix.from_y_rotation((moux-x)/99) * matrix.from_x_rotation((mouy-y)/99)
-    GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'modelmatrix'), 1, False, modelmtx)
+    global moux, mouy#, modelmtx
+    #modelmtx = modelmtx * matrix.from_y_rotation((moux-x)/99) * matrix.from_x_rotation((mouy-y)/99)
+    # GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'modelmatrix'), 1, False, modelmtx)
     moux, mouy = x, y
 
 def oncl(code, state, x, y):
     """Inite Curso Posit"""
     global moux, mouy
     moux, mouy = x, y
+    code, state = code, state   # bluh.
 
 def main():
     """Do all this upon running the script."""
-    global window, firsttime, lasttime, terrain, architincture
+    global window, firsttime, lasttime, terrain, blanktex, architincture, keys
     GLUT.glutInit(sys.argv)
     GLUT.glutInitDisplayMode(GLUT.GLUT_RGBA | GLUT.GLUT_DOUBLE | GLUT.GLUT_DEPTH)
     GLUT.glutInitWindowSize(640, 480)
@@ -185,24 +225,44 @@ def main():
     GLUT.glutIdleFunc(draw)
     GLUT.glutReshapeFunc(resiz)
     GLUT.glutKeyboardFunc(onkey)
+    GLUT.glutKeyboardUpFunc(offkey)
     GLUT.glutSpecialFunc(onkey)
+    GLUT.glutSpecialUpFunc(offkey)
     GLUT.glutMotionFunc(onmou)
     GLUT.glutMouseFunc(oncl)
     init(640, 480)
     terrain = texturit('terrain.png')
+    blanktex = texturit('plain.png')
     architincture = buff_vertices(vs, None)
-    firsttime = lasttime = time.time()
+    firsttime = lasttime = time.clock()
+    keys = {}
     GLUT.glutMainLoop()
 
 class Chaemera:
     """Moves around, looks at things."""
     def __init__(self):
-        self.pos = vector([0, 0, 5.5])
-        self.targ = vector([0, 0, 0])
+        self.pos = vector([0.0, 0.0, 5.0])
+        self.ure = vector([0.0, 1.0, 0.0])
+        # duplicate code just cause pylint doesn't like member initialisation outside of __init__
+        self._dir = vector([0.0, 0.0, -1.0])
+        self.myx = self._dir ^ self.ure
+        self.myy = self.myx ^ self._dir
+
+    @property
+    def dir(self):
+        """The direction it is facing."""
+        return self._dir
+
+    @dir.setter
+    def dir(self, value: vector):
+        """Sets the normalised direction, as well as the local x and y axes."""
+        self._dir = value.normalised
+        self.myx = self._dir ^ self.ure
+        self.myy = self.myx ^ self._dir
 
     def lookat(self) -> matrix:
-        """Gets the lookat matrix from the postarg vectors."""
-        return matrix.from_lookat(self.pos, self.targ, [0,1,0])
+        """Gets the lookat matrix from the posdir vectors."""
+        return matrix.from_lookat(self.pos, self.pos + self.dir, self.ure)
 
 if __name__ == '__main__':
     main()
