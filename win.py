@@ -4,7 +4,7 @@ import sys
 import time
 # from random import random
 import os
-from math import pi, radians#, tan#sin#, cos, atan2
+from math import pi, radians, tan, sin, cos, atan2
 from PIL import Image
 from numpy import array
 
@@ -32,8 +32,8 @@ def init(wid, hig):
     rematr(wid, hig)
     modelmtx = matrix.from_scale([1.8, 1.8, 1.8])
     chaem = Chaemera()
-    GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'viewmatrix'), 1, GL.GL_FALSE, chaem.lookat())
-    GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'modelmatrix'), 1, GL.GL_FALSE, modelmtx)
+    GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'viewmatrix'), 1, False, chaem.lookat())
+    GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'modelmatrix'), 1, False, modelmtx)
 
 def rematr(wid, hig):
     """Resets the projection matrix."""
@@ -41,7 +41,7 @@ def rematr(wid, hig):
         hig = 1
     # This method has FOV in degrees for some reason???
     pm = matrix.perspective_projection(75, wid/hig, 0.01, 100)
-    GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'projectmatrix'), 1, GL.GL_FALSE, pm)
+    GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'projectmatrix'), 1, False, pm)
 
 def resiz(wid, hig):
     """Handles matrix resizing on viewport resize."""
@@ -121,15 +121,35 @@ def draw():
     # modelmtx = matrix.from_y_rotation(0.001/timedelta+1)
     GL.glBindVertexArray(architincture)
     GL.glBindTexture(GL.GL_TEXTURE_2D, terrain)
-    for x in [matrix.from_x_rotation(radians(i)) for i in range(0, 90, 15)]:
-        GL.glUniformMatrix4fv(
-            GL.glGetUniformLocation(shaderp, 'modelmatrix'), 1, GL.GL_FALSE, x * modelmtx)
-        GL.glDrawArrays(GL.GL_QUADS, 0, len(vs))
-    GL.glBindVertexArray(0)
+    GL.glDrawArrays(GL.GL_QUADS, 0, len(vs))
     GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
+    GL.glBindVertexArray(0)
+
+    # rad = 10
+    # cx = sin(time.time()) * rad
+    # cy = cos(time.time()) * rad
+    # chaem.pos = vector([cx, 0, cy])
+    # GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'viewmatrix'), 1, False, chaem.lookat())
+
+    origine()
 
     GLUT.glutSwapBuffers()
     lasttime = time.time()
+
+def origine():
+    """Draws a set of lines at 0,0,0"""
+    GL.glLineWidth(5)
+    GL.glBegin(GL.GL_LINES)
+    GL.glColor(1, 0, 0)
+    GL.glVertex(1, 0, 0)
+    GL.glVertex(-1, 0, 0)
+    GL.glColor(0, 1, 0)
+    GL.glVertex(0, 1, 0)
+    GL.glVertex(0, -1, 0)
+    GL.glColor(0, 0, 1)
+    GL.glVertex(0, 0, 1)
+    GL.glVertex(0, 0, -1)
+    GL.glEnd()
 
 def onkey(code, x, y):
     """Alter Vue Mater"""
@@ -139,14 +159,14 @@ def onkey(code, x, y):
          b'e': [0, 0, 1], b'q': [0, 0, -1],}
     if code == b'\x1b': # The Escape Key codevalue.
         exit()
-    chaem.pos = matrix.from_translation(vector(d.get(code, [0, 0, 0]))) * chaem.pos
-    GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'viewmatrix'), 1, GL.GL_FALSE, chaem.lookat())
+    chaem.pos += d.get(code, [0, 0, 0])
+    GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'viewmatrix'), 1, False, chaem.lookat())
 
 def onmou(x, y):
     """Alter Moda Mater"""
     global modelmtx, moux, mouy
     modelmtx = modelmtx * matrix.from_y_rotation((moux-x)/99) * matrix.from_x_rotation((mouy-y)/99)
-    GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'modelmatrix'), 1, GL.GL_FALSE, modelmtx)
+    GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'modelmatrix'), 1, False, modelmtx)
     moux, mouy = x, y
 
 def oncl(code, state, x, y):
@@ -177,16 +197,12 @@ def main():
 class Chaemera:
     """Moves around, looks at things."""
     def __init__(self):
-        self.pos = vector([0, 0, 5])
+        self.pos = vector([0, 0, 5.5])
         self.targ = vector([0, 0, 0])
 
     def lookat(self) -> matrix:
-        """Calculates a lookat matrix from the postarg vectors."""
-        direc = (self.pos - self.targ).normalised
-        right = (vector([0, 1, 0]) ^ direc).normalised
-        up = (direc ^ right).normalised
-        return matrix([[right[0], up[0], direc[0], 0], [right[1], up[1], direc[1], 0],
-                       [right[2], up[2], direc[2], 0], [-self.pos[0], -self.pos[1], -self.pos[2], 1]])
+        """Gets the lookat matrix from the postarg vectors."""
+        return matrix.from_lookat(self.pos, self.targ, [0,1,0])
 
 if __name__ == '__main__':
     main()
