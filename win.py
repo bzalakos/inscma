@@ -1,7 +1,5 @@
 """Draws a bunch of squares."""
 # Ignore the invalid variable naming. pylint: disable-msg=C0103
-import sys
-import time
 # from random import random
 import os
 from math import pi#, radians, tan, sin, cos, atan2
@@ -12,7 +10,7 @@ from pyrr import Matrix44 as matrix, Vector3 as vector
 import OpenGL.GL as GL
 from OpenGL.arrays import vbo
 from OpenGL.GL import shaders
-import OpenGL.GLUT as GLUT
+import glfw
 from dots import vs
 
 os.chdir(os.path.dirname(__file__))
@@ -42,8 +40,8 @@ def rematr(wid, hig):
     pm = matrix.perspective_projection(75, wid/hig, 0.01, 100)
     GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'projectmatrix'), 1, False, pm)
 
-def resiz(wid, hig):
-    """Handles matrix resizing on viewport resize."""
+def resiz(window, wid, hig):
+    """Handles viewport resizing on window resize."""
     if hig == 0:
         hig = 1
     GL.glViewport(0, 0, wid, hig)
@@ -126,20 +124,17 @@ def mochae(latspe, rotspe):
         def tr():
             chaem.dir = matrix.from_y_rotation(x) * chaem.dir
         return tr
-    d = {b'w': ad(chaem.dir), b's': ad(-chaem.dir),
-         b'a': ad(-chaem.myx), b'd': ad(chaem.myx),
-         b'q': ad(chaem.myy), b'e': ad(-chaem.myy),
-         GLUT.GLUT_KEY_LEFT: rt(-rotspe), GLUT.GLUT_KEY_RIGHT: rt(rotspe)}
+    d = {glfw.KEY_W: ad(chaem.dir), glfw.KEY_S: ad(-chaem.dir),
+         glfw.KEY_A: ad(-chaem.myx), glfw.KEY_D: ad(chaem.myx),
+         glfw.KEY_Q: ad(chaem.myy), glfw.KEY_E: ad(-chaem.myy),
+         glfw.KEY_LEFT: rt(-rotspe), glfw.KEY_RIGHT: rt(rotspe)}
     for x in d:
         trykey(x, d[x])
     GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'viewmatrix'), 1, False, chaem.lookat())
 
 def draw():
     """Put the main drawing code in here."""
-    global lasttime
-    timedelta = time.clock() - lasttime or time.get_clock_info('clock').resolution
-    lasttime = time.clock()
-    mochae(5 * timedelta, (pi / 2) * timedelta) # Five 'meters', and one quarter turn per second.
+    mochae(4 * timedelta, (pi / 2) * timedelta) # Four 'meters', and one quarter turn per second.
 
     GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
     GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'modelmatrix'), 1, False, modelmtx)
@@ -151,8 +146,6 @@ def draw():
     GL.glBindVertexArray(0)
 
     origine()
-
-    GLUT.glutSwapBuffers()
 
 def origine():
     """Draws a set of lines at 0,0,0"""
@@ -189,54 +182,41 @@ def origine():
     v.unbind()
     v.delete()
 
-def onkey(code, x, y):
+def onkey(window, key, code, action, mode):
     """Record keys"""
-    if code == b'\x1b': # The Escape Key codevalue.
-        exit()
-    keys[code] = True
-    x, y = x, y # blah.
-
-def offkey(code, x, y):
-    """Decord Keys"""
-    keys[code] = False
-    x, y = x, y     # bleh.
-
-def onmou(x, y):
-    """Alter Moda Mater"""
-    global moux, mouy#, modelmtx
-    #modelmtx = modelmtx * matrix.from_y_rotation((moux-x)/99) * matrix.from_x_rotation((mouy-y)/99)
-    # GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'modelmatrix'), 1, False, modelmtx)
-    moux, mouy = x, y
-
-def oncl(code, state, x, y):
-    """Inite Curso Posit"""
-    global moux, mouy
-    moux, mouy = x, y
-    code, state = code, state   # bluh.
+    if key == glfw.KEY_ESCAPE:
+        glfw.set_window_should_close(window, True)
+    keys[key] = bool(action)   # PRESS is 1, RELEASE is zero. Maps nicely enough.
 
 def main():
     """Do all this upon running the script."""
-    global window, firsttime, lasttime, terrain, blanktex, architincture, keys
-    GLUT.glutInit(sys.argv)
-    GLUT.glutInitDisplayMode(GLUT.GLUT_RGBA | GLUT.GLUT_DOUBLE | GLUT.GLUT_DEPTH)
-    GLUT.glutInitWindowSize(640, 480)
-    window = GLUT.glutCreateWindow(b'test')
-    GLUT.glutDisplayFunc(draw)
-    GLUT.glutIdleFunc(draw)
-    GLUT.glutReshapeFunc(resiz)
-    GLUT.glutKeyboardFunc(onkey)
-    GLUT.glutKeyboardUpFunc(offkey)
-    GLUT.glutSpecialFunc(onkey)
-    GLUT.glutSpecialUpFunc(offkey)
-    GLUT.glutMotionFunc(onmou)
-    GLUT.glutMouseFunc(oncl)
+    global firsttime, lasttime, timedelta, terrain, blanktex, architincture, keys, oldmouse
+    glfw.init()
+    # glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 3)
+    # glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 3)
+    # glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
+    # glfw.window_hint(glfw.RESIZABLE, False)
+    # GLUT.glutInitDisplayMode(GLUT.GLUT_RGBA | GLUT.GLUT_DOUBLE | GLUT.GLUT_DEPTH)
+    window = glfw.create_window(640, 480, 'Test', None, None)
+    glfw.make_context_current(window)
+    glfw.set_window_size_callback(window, resiz)
+    glfw.set_key_callback(window, onkey)
+    # GLUT.
     init(640, 480)
     terrain = texturit('terrain.png')
     blanktex = texturit('plain.png')
     architincture = buff_vertices(vs, None)
-    firsttime = lasttime = time.clock()
+    firsttime = lasttime = glfw.get_time()
     keys = {}
-    GLUT.glutMainLoop()
+    while not glfw.window_should_close(window):
+        timedelta = glfw.get_time() - lasttime or glfw.get_timer_frequency()
+        lasttime = glfw.get_time()
+        glfw.poll_events()
+        draw()
+        glfw.swap_buffers(window)
+
+        oldmouse = glfw.get_cursor_pos(window)
+    glfw.terminate()
 
 class Chaemera:
     """Moves around, looks at things."""
