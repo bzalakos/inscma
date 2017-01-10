@@ -3,6 +3,7 @@
 # from random import random
 import os
 from math import pi#, radians, tan, sin, cos, atan2
+from enum import Enum
 from PIL import Image
 from numpy import array, clip
 
@@ -28,7 +29,7 @@ def init(wid, hig):
     shades()
     rematr(wid, hig)
     modelmtx = matrix.from_scale([1.8, 1.8, 1.8])
-    chaem = Chaemera()
+    chaem = Fremv()
     GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'viewmatrix'), 1, False, chaem.lookat())
     GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'modelmatrix'), 1, False, modelmtx)
 
@@ -116,28 +117,9 @@ def shades():
     shaderp = shaders.compileProgram(vertex_shader, fragment_shader)
     GL.glUseProgram(shaderp)
 
-def mochae(latspe, rotspe):
-    """A whole bunch of Arcane Nonsense, because I just can't stand repeated code, apparently."""
-    # pylint: disable-msg=C0111
-    def trykey(code, todo):
-        if keys.get(code, False):
-            todo()
-    def ad(x):
-        def da():
-            chaem.pos += x * latspe
-        return da
-    d = {glfw.KEY_W: ad(chaem.dir), glfw.KEY_S: ad(-chaem.dir),
-         glfw.KEY_A: ad(-chaem.myx), glfw.KEY_D: ad(chaem.myx),
-         glfw.KEY_Q: ad(chaem.myy), glfw.KEY_E: ad(-chaem.myy),}
-    chaem.pitya(chaem.pitch - deltam[1] * rotspe, chaem.yaw - deltam[0] * rotspe)
-    for x in d:
-        trykey(x, d[x])
-    GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'viewmatrix'), 1, False, chaem.lookat())
-
 def draw():
     """Put the main drawing code in here."""
-    mochae(4 * timedelta, (pi / 2) * timedelta) # Four 'meters', and one quarter turn per second.
-
+    chaem.mochae()
     GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
     GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'modelmatrix'), 1, False, modelmtx)
     GL.glBindVertexArray(architincture)
@@ -289,6 +271,58 @@ class Chaemera:
     def lookat(self) -> matrix:
         """Gets the lookat matrix from the posdir vectors."""
         return matrix.from_lookat(self.pos, self.pos + self.dir, self.ure)
+
+class Fremv(Chaemera):
+    """Chaemerae that can actually move around."""
+    def __init__(self):
+        super().__init__()
+        self.latspe = 4
+        self.rotspe = pi / 2
+
+    def mochae(self):
+        """Move the thing according to a whole mess of Global State."""
+        # pylint: disable-msg=C0111
+        def trykey(code, todo):
+            if keys.get(code, False):
+                todo()
+        def ad(x):
+            def da():
+                self.pos += x * self.latspe * timedelta
+            return da
+        d = {glfw.KEY_W: ad(self.dir), glfw.KEY_S: ad(-self.dir),
+             glfw.KEY_A: ad(-self.myx), glfw.KEY_D: ad(self.myx),
+             glfw.KEY_Q: ad(self.myy), glfw.KEY_E: ad(-self.myy),}
+        self.pitya(self.pitch - deltam[1] * self.rotspe * timedelta,
+                   self.yaw - deltam[0] * self.rotspe * timedelta)
+        for x in d:
+            trykey(x, d[x])
+        GL.glUniformMatrix4fv(
+            GL.glGetUniformLocation(shaderp, 'viewmatrix'), 1, False, self.lookat())
+
+class Grimv(Chaemera):
+    """This one, not so much with the moving."""
+    def __init__(self):
+        super().__init__()
+        self.latspe = 4
+        self.rotspe = pi / 2
+        self.states = Enum('states', 'stop forw left righ')
+        self.stat = self.states.stop
+        self.orgp = self.pos
+        self.ancy = self.yaw
+
+    def mochae(self):
+        """More restrictions, yet harder to describe."""
+        if self.stat == self.states.forw:
+            tent, rest = self.dir * self.latspe * timedelta, self.orgp + self.dir - self.pos
+            if tent.length > rest.length:
+                self.pos = (self.pos + rest).round()
+                self.stat = self.states.stop
+            else:
+                self.pos += tent
+        if self.stat == self.states.left:
+            tent, rest = self.rotspe * timedelta, self.ancy - pi/2 - self.yaw
+
+
 
 if __name__ == '__main__':
     main()

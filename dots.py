@@ -7,7 +7,7 @@ room = [[6, 2, 2, 3],   # x +->
 
 # Ignore the invalid variable naming. pylint: disable-msg=C0103
 # Y is indeed the up/down axis. x y z r g b u v
-l = 0.49   # To ease the sizing, use this constant.
+l = 0.5   # To ease the sizing, use this constant.
 vers = [[[-l, -l, -l], [+l, -l, -l], [+l, -l, +l], [-l, -l, +l],   # sol, v plafond
          [-l, +l, -l], [+l, +l, -l], [+l, +l, +l], [-l, +l, +l]]] + \
        [[[+l, +l, -l], [+l, +l, +l], [+l, -l, +l], [+l, -l, -l]],  # +x
