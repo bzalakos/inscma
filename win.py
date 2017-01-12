@@ -2,7 +2,7 @@
 # Ignore the invalid variable naming. pylint: disable-msg=C0103
 # from random import random
 import os
-from math import pi#, radians, tan, sin, cos, atan2
+from math import pi, copysign as sign#, radians, tan, sin, cos, atan2
 from enum import Enum
 from PIL import Image
 from numpy import array, clip
@@ -28,8 +28,8 @@ def init(wid, hig):
     GL.glShadeModel(GL.GL_SMOOTH)
     shades()
     rematr(wid, hig)
-    modelmtx = matrix.from_scale([1.8, 1.8, 1.8])
-    chaem = Fremv()
+    modelmtx = matrix.from_scale([2, 2, 2]) * matrix.from_translation([0, 0, -1])
+    chaem = Grimv()
     GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'viewmatrix'), 1, False, chaem.lookat())
     GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'modelmatrix'), 1, False, modelmtx)
 
@@ -307,22 +307,49 @@ class Grimv(Chaemera):
         self.rotspe = pi / 2
         self.states = Enum('states', 'stop forw left righ')
         self.stat = self.states.stop
-        self.orgp = self.pos
+        self.orgp = self.pos.copy()
         self.ancy = self.yaw
 
     def mochae(self):
         """More restrictions, yet harder to describe."""
+        def trykey(code):
+            return keys.get(code, False)
         if self.stat == self.states.forw:
-            tent, rest = self.dir * self.latspe * timedelta, self.orgp + self.dir - self.pos
-            if tent.length > rest.length:
-                self.pos = (self.pos + rest).round()
+            tent, rest = self.dir * self.latspe * timedelta, self.orgp + self.dir*2 - self.pos
+            if tent.length > rest.length:   # Snap to grid.
+                self.pos = ((self.pos + rest) * 2).round() / 2
                 self.stat = self.states.stop
             else:
                 self.pos += tent
         if self.stat == self.states.left:
             tent, rest = self.rotspe * timedelta, self.ancy - pi/2 - self.yaw
+            rest = rest if abs(rest) < pi else 2*pi - rest
+            if abs(tent) > abs(rest):     # Round it to the nearest pi/2.
+                self.yaw = round((self.yaw + rest) / (pi/2)) * (pi/2)
+                self.stat = self.states.stop
+            else:
+                self.yaw += tent
+        if self.stat == self.states.righ:
+            tent, rest = -self.rotspe * timedelta, self.ancy + pi/2 - self.yaw
+            print(tent, rest)
+            if abs(tent) > abs(rest):     # Round it to the nearest pi/2.
+                self.yaw = round((self.yaw + rest) / (pi/2)) * (pi/2)
+                self.stat = self.states.stop
+            else:
+                self.yaw += tent
+        if self.stat == self.states.stop:
+            if trykey(glfw.KEY_W):
+                self.orgp = self.pos.copy()
+                self.stat = self.states.forw
+            elif trykey(glfw.KEY_A):
+                self.ancy = self.yaw
+                self.stat = self.states.left
+            elif trykey(glfw.KEY_D):
+                self.ancy = self.yaw
+                self.stat = self.states.righ
 
-
+        GL.glUniformMatrix4fv(
+            GL.glGetUniformLocation(shaderp, 'viewmatrix'), 1, False, self.lookat())
 
 if __name__ == '__main__':
     main()
