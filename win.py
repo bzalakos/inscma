@@ -331,7 +331,7 @@ class Grimv(Chaemera):
                 self.yaw += tent
         if self.stat == self.states.righ:
             tent, rest = -self.rotspe * timedelta, self.ancy + pi/2 - self.yaw
-            print(tent, rest)
+            rest = pi - abs(abs(rest) - pi) # maybe. Replace it into the declaration if it works
             if abs(tent) > abs(rest):     # Round it to the nearest pi/2.
                 self.yaw = round((self.yaw + rest) / (pi/2)) * (pi/2)
                 self.stat = self.states.stop
