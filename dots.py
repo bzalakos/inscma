@@ -1,14 +1,14 @@
 """Extracted the vertex declaration here, it was kind of in the way.
 Edit that first array array to customise."""
 
-room = [[6, 2, 2, 3],   # x +->
-        [5, 5, 5, 5],   # z
-        [5, 5, 20, 5],  # +
-        [12, 8, 8, 9]]  # v
+room = [[6, 10, 2, 3],   # x +->
+        [5, 7, 5, 5],   # z
+        [5, 5, 28, 5],  # +
+        [12, 8, 10, 9]]  # v
 
 # Ignore the invalid variable naming. pylint: disable-msg=C0103
 # Y is indeed the up/down axis. x y z r g b u v
-l = 0.49999   # To ease the sizing, use this constant.
+l = 0.499   # To ease the sizing, use this constant.
 vers = [[[-l, -l, -l], [+l, -l, -l], [+l, -l, +l], [-l, -l, +l],   # sol, v plafond
          [-l, +l, -l], [+l, +l, -l], [+l, +l, +l], [-l, +l, +l]]] + \
        [[[+l, +l, -l], [+l, +l, +l], [+l, -l, +l], [+l, -l, -l]],  # +x
