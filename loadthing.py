@@ -1,4 +1,5 @@
 """Loading images to Textures, and vertex lists to VAOs as well, that sort of thing."""
+from csv import reader
 from PIL import Image
 from numpy import array
 from OpenGL.arrays import vbo
@@ -8,6 +9,15 @@ from OpenGL.GL import glBindVertexArray, glGenVertexArrays, glVertexAttribPointe
     GL_FLOAT, GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW, GL_UNSIGNED_BYTE, GL_TEXTURE_2D, GL_RGBA, \
     GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE, \
     GL_TEXTURE_MIN_FILTER, GL_TEXTURE_MAG_FILTER, GL_NEAREST
+
+def load_vertices(filn: str) -> int:
+    """Loads a csv file of vertex data. First, the rows of vertices, then the indices.
+    VX needs to be the [[pX, pY, pZ, nX, nY, nZ, cR, cR, cB, tU, tV]] * len sort of format.
+    And the Is all on the last row."""
+    with open(filn) as fil:
+        verts = [[float(col) for col in row if col != ''] for row in reader(fil)]
+        indes = [int(nu) for nu in verts.pop()] # Performance implications?  it's probably fine
+    return buff_vertices(verts, indes)
 
 def buff_vertices(verts: list, indes: list=None) -> int:
     """Given a list of vertex-like objects, an optional list of indices, returns a VAO handle.
