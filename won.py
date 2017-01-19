@@ -13,7 +13,7 @@ from dots import vs, lx
 
 os.chdir(os.path.dirname(__file__))
 from chaem import Fremv
-from loadthing import texturit, buff_vertices
+from loadthing import texturit, buff_vertices, load_vertices, Thing, Material
 
 # Defining global variables somewhere other than the module level. pylint: disable-msg=W0601
 
@@ -27,7 +27,7 @@ def init():
     GL.glShadeModel(GL.GL_SMOOTH)
     shades()
     chaem = Fremv(keys, deltam)
-    GL.glUniform3fv(GL.glGetUniformLocation(shaderp, 'lightColour'), 1, [1.0, 1.0, 1.0])
+    GL.glUniform3f(GL.glGetUniformLocation(shaderp, 'lightColour'), *[1.0, 1.0, 1.0])
     modelmatrix = matrix.from_scale([2, 2, 2]) * matrix.from_translation([0, 0, -1])
     wid, hig = glfw.get_window_size(window)
     hig = hig if hig else 1
@@ -58,13 +58,16 @@ def shades():
         layout (location = 1) in vec3 normal;
         layout (location = 2) in vec3 colour;
         layout (location = 3) in vec2 texcord;
-        uniform mat4 projectmatrix;
-        uniform mat4 viewmatrix;
-        uniform mat4 modelmatrix;
+
         out vec3 worldpos;
         out vec3 ournormal;
         out vec3 ourcolour;
         out vec2 ourtex;
+
+        uniform mat4 projectmatrix;
+        uniform mat4 viewmatrix;
+        uniform mat4 modelmatrix;
+
         void main(){
             worldpos = vec3(modelmatrix * vec4(position, 1.0));
             gl_Position = projectmatrix * viewmatrix * modelmatrix * vec4(position, 1.0);
@@ -74,24 +77,41 @@ def shades():
         }""", GL.GL_VERTEX_SHADER)
     fragment_shader = shaders.compileShader(
         """#version 330 core
+        struct Material{
+            vec3 ambient;
+            vec3 diffuse;
+            vec3 specular;
+            float shininess;
+        };
+
         in vec3 worldpos;
         in vec3 ournormal;
         in vec3 ourcolour;
         in vec2 ourtex;
+
         out vec4 colour;
+
         uniform sampler2D tex;
         uniform vec3 lightColour;
         uniform vec3 lightPos;
         uniform vec3 viewpos;
+        uniform Material material;
 
         void main(){
-            vec3 ambient = 0.1 * lightColour;
+            //Ambient level
+            vec3 ambient = material.ambient * lightColour * 0.1;
+
+            //Diffuse calculation
             vec3 norm = normalize(ournormal);
             vec3 lightdir = normalize(lightPos - worldpos);
+            float diff = max(dot(norm, lightdir), 0.0);
+            vec3 diffuse = diff * material.diffuse * lightColour;
+
+            //Specular calculation
             vec3 viewdir = normalize(viewpos - worldpos);
             vec3 reflectdir = reflect(-lightdir, norm);
-            vec3 diffuse = max(dot(norm, lightdir), 0.0) * lightColour;
-            vec3 specular = 0.5 * pow(max(dot(viewdir, reflectdir), 0.0), 32) * lightColour;
+            float spec = pow(max(dot(viewdir, reflectdir), 0.0), material.shininess);
+            vec3 specular = spec * material.specular * lightColour;
 
             colour = texture(tex, ourtex) * vec4((ambient + diffuse + specular) * ourcolour, 1.0);
         }""", GL.GL_FRAGMENT_SHADER)
@@ -115,22 +135,18 @@ def draw():
     GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
     GL.glEnable(GL.GL_TEXTURE_2D)
 
-
     GL.glUseProgram(shaderp)
-    luxp += [sin(lasttime) * timedelta, cos(lasttime) * timedelta * 2, 0.0]
-    GL.glUniform3fv(GL.glGetUniformLocation(shaderp, 'lightPos'), 1, luxp)
-    GL.glUniform3fv(GL.glGetUniformLocation(shaderp, 'viewpos'), 1, chaem.pos)
+    luxp = [sin(lasttime) * 5, cos(lasttime) * 5, 0.0]
+    GL.glUniform3f(GL.glGetUniformLocation(shaderp, 'lightPos'), *luxp)
+    GL.glUniform3f(GL.glGetUniformLocation(shaderp, 'viewpos'), *chaem.pos)
     rematr()
-    GL.glBindVertexArray(architincture)
-    GL.glBindTexture(GL.GL_TEXTURE_2D, terrain)
-    GL.glDrawArrays(GL.GL_QUADS, 0, len(vs))
-    GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
-    GL.glBindVertexArray(0)
+    architincture.draw()
 
     GL.glUseProgram(shaderl)
     rematr()
     GL.glBindVertexArray(lux)
-    mmoodd = modelmatrix * matrix.from_scale([0.5, 0.5, 0.5]) * matrix.from_translation(luxp)
+    mmoodd = modelmatrix * matrix.from_scale([0.2, 0.2, 0.2]) * matrix.from_translation(luxp) * \
+        matrix.from_eulers([lasttime, lasttime, lasttime])
     GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'modelmatrix'), 1, False, mmoodd)
     GL.glDrawArrays(GL.GL_QUADS, 0, len(lx))
     GL.glBindVertexArray(0)
@@ -150,8 +166,8 @@ def onsc(window, xof, yof):
 
 def main():
     """Do all this upon running the script."""
-    global window, firsttime, lasttime, timedelta, terrain, blanktex, architincture, lux, luxp, \
-        keys, oldmouse, deltam, whel
+    global window, firsttime, lasttime, timedelta, blanktex, architincture, \
+        lux, luxp, keys, oldmouse, deltam, whel
     glfw.init()
     window = glfw.create_window(640, 480, 'Test', None, None)
     oldmouse = (320, 240)
@@ -166,7 +182,8 @@ def main():
     init()
     terrain = texturit('img/terrain.png')
     blanktex = texturit('img/plain.png')
-    architincture = buff_vertices(vs)
+    architincture = Thing(*load_vertices('img/sph.ply'), terrain, Material(shaderp, \
+        ambient=(1.0, 0.5, 0.31), diffuse=(1.0, 0.5, 0.31), specular=(0.5, 0.5, 0.5), shininess=32.0))
     lux = buff_vertices(lx, None)
     luxp = vector([0.0, 0.0, 0.0])
     firsttime = lasttime = glfw.get_time()
