@@ -1,8 +1,34 @@
-"""Camera types and subtypes. """
+"""Camera types and subtypes. Lights types and subtypes, maybe."""
 from enum import Enum
 import glfw
 from numpy import clip, pi
 from pyrr import Vector3, Quaternion, Matrix44
+from OpenGL.GL import glGetUniformLocation, glUniform3f, GL_VERTEX_SHADER, GL_FRAGMENT_SHADER
+from OpenGL.GL.shaders import compileShader, compileProgram
+from loadthing import Thing
+
+def make_lampshade():
+    """Call this after initialisting glcontext ti set up the lamp shader."""
+    global shaderl
+    shaderl = compileProgram(
+        compileShader(
+            """#version 330 core
+            layout (location = 0) in vec3 position;
+
+            uniform mat4 projectmatrix;
+            uniform mat4 viewmatrix;
+            uniform mat4 modelmatrix;
+
+            void main(){
+                gl_Position = projectmatrix * viewmatrix * modelmatrix * vec4(position, 1.0);
+            }""", GL_VERTEX_SHADER),
+        compileShader(
+            """#version 330 core
+            out vec4 colour;
+
+            void main(){
+                colour = vec4(1.0);
+            }""", GL_FRAGMENT_SHADER))
 
 class Chaemera:
     """Moves around, looks at things."""
@@ -139,3 +165,17 @@ class Grimv(Chaemera):
             elif trykey(glfw.KEY_D):
                 self.ancy = self.yaw
                 self.stat = self.states.righ
+
+class Lamp:
+    """A light source. Uses its own shader to look particularly lightsourceworthy."""
+    def __init__(self, model: Thing, pos=Vector3([0.0, 0.0, 0.0]),
+                 ambient=(0.1, 0.1, 0.1), diffuse=(1.0, 1.0, 1.0), specular=(1.0, 1.0, 1.0)):
+        self.pos, self.ambient, self.diffuse, self.specular, self.model = \
+            pos, ambient, diffuse, specular, model
+
+    def bind(self):
+        """Bind the light values to the shader. Not the lamp shader, the other one."""
+        glUniform3f(glGetUniformLocation(self.model.shader, 'light.position'), *self.pos)
+        glUniform3f(glGetUniformLocation(self.model.shader, 'light.ambient'), *self.ambient)
+        glUniform3f(glGetUniformLocation(self.model.shader, 'light.diffuse'), *self.diffuse)
+        glUniform3f(glGetUniformLocation(self.model.shader, 'light.specular'), *self.specular)

@@ -9,11 +9,10 @@ from pyrr import Matrix44 as matrix, Vector3 as vector#, Quaternion as quaternio
 import OpenGL.GL as GL
 from OpenGL.GL import shaders
 import glfw
-from dots import vs, lx
 
-os.chdir(os.path.dirname(__file__))
-from chaem import Fremv
+from chaem import Fremv, Lamp, make_lampshade
 from loadthing import texturit, buff_vertices, load_vertices, Thing, Material
+os.chdir(os.path.dirname(__file__))
 
 # Defining global variables somewhere other than the module level. pylint: disable-msg=W0601
 
@@ -50,83 +49,74 @@ def resiz(window, wid, hig):
 
 def shades():
     """Set up the Vertex and Fragment Shaders."""
-    global shaderp, shaderl
+    global shaderp
 
-    vertex_shader = shaders.compileShader(
-        """#version 330 core
-        layout (location = 0) in vec3 position;
-        layout (location = 1) in vec3 normal;
-        layout (location = 2) in vec3 colour;
-        layout (location = 3) in vec2 texcord;
+    shaderp = shaders.compileProgram(
+        shaders.compileShader(
+            """#version 330 core
+            layout (location = 0) in vec3 position;
+            layout (location = 1) in vec3 normal;
+            layout (location = 2) in vec3 colour;
+            layout (location = 3) in vec2 texcord;
 
-        out vec3 worldpos;
-        out vec3 ournormal;
-        out vec3 ourcolour;
-        out vec2 ourtex;
+            out vec3 worldpos;
+            out vec3 ournormal;
+            out vec3 ourcolour;
+            out vec2 ourtex;
 
-        uniform mat4 projectmatrix;
-        uniform mat4 viewmatrix;
-        uniform mat4 modelmatrix;
+            uniform mat4 projectmatrix;
+            uniform mat4 viewmatrix;
+            uniform mat4 modelmatrix;
 
-        void main(){
-            worldpos = vec3(modelmatrix * vec4(position, 1.0));
-            gl_Position = projectmatrix * viewmatrix * modelmatrix * vec4(position, 1.0);
-            ournormal = normal;
-            ourcolour = colour;
-            ourtex = texcord;
-        }""", GL.GL_VERTEX_SHADER)
-    fragment_shader = shaders.compileShader(
-        """#version 330 core
-        struct Material{
-            vec3 ambient;
-            vec3 diffuse;
-            vec3 specular;
-            float shininess;
-        };
+            void main(){
+                worldpos = vec3(modelmatrix * vec4(position, 1.0));
+                gl_Position = projectmatrix * viewmatrix * modelmatrix * vec4(position, 1.0);
+                ournormal = normal;
+                ourcolour = colour;
+                ourtex = texcord;
+            }""", GL.GL_VERTEX_SHADER),
+        shaders.compileShader(
+            """#version 330 core
+            struct Material{
+                vec3 ambient;
+                vec3 diffuse;
+                vec3 specular;
+                float shininess;
+            };
 
-        in vec3 worldpos;
-        in vec3 ournormal;
-        in vec3 ourcolour;
-        in vec2 ourtex;
+            in vec3 worldpos;
+            in vec3 ournormal;
+            in vec3 ourcolour;
+            in vec2 ourtex;
 
-        out vec4 colour;
+            out vec4 colour;
 
-        uniform sampler2D tex;
-        uniform vec3 lightColour;
-        uniform vec3 lightPos;
-        uniform vec3 viewpos;
-        uniform Material material;
+            uniform sampler2D tex;
+            uniform vec3 lightColour;
+            uniform vec3 lightPos;
+            uniform vec3 viewpos;
+            uniform Material material;
 
-        void main(){
-            //Ambient level
-            vec3 ambient = material.ambient * lightColour * 0.1;
+            void main(){
+                //Ambient level
+                vec3 ambient = material.ambient * lightColour * 0.1;
 
-            //Diffuse calculation
-            vec3 norm = normalize(ournormal);
-            vec3 lightdir = normalize(lightPos - worldpos);
-            float diff = max(dot(norm, lightdir), 0.0);
-            vec3 diffuse = diff * material.diffuse * lightColour;
+                //Diffuse calculation
+                vec3 norm = normalize(ournormal);
+                vec3 lightdir = normalize(lightPos - worldpos);
+                float diff = max(dot(norm, lightdir), 0.0);
+                vec3 diffuse = diff * material.diffuse * lightColour;
 
-            //Specular calculation
-            vec3 viewdir = normalize(viewpos - worldpos);
-            vec3 reflectdir = reflect(-lightdir, norm);
-            float spec = pow(max(dot(viewdir, reflectdir), 0.0), material.shininess);
-            vec3 specular = spec * material.specular * lightColour;
+                //Specular calculation
+                vec3 viewdir = normalize(viewpos - worldpos);
+                vec3 reflectdir = reflect(-lightdir, norm);
+                float spec = pow(max(dot(viewdir, reflectdir), 0.0), material.shininess);
+                vec3 specular = spec * material.specular * lightColour;
 
-            colour = texture(tex, ourtex) * vec4((ambient + diffuse + specular) * ourcolour, 1.0);
-        }""", GL.GL_FRAGMENT_SHADER)
-    shaderp = shaders.compileProgram(vertex_shader, fragment_shader)
+                vec3 totallight = ambient + diffuse + specular;
+                colour = texture(tex, ourtex) * vec4(totallight * ourcolour, 1.0);
+            }""", GL.GL_FRAGMENT_SHADER))
     GL.glUseProgram(shaderp)
-
-    fragment_shader_l = shaders.compileShader(
-        """#version 330 core
-        out vec4 colour;
-        uniform sampler2D tex;
-        uniform vec3 lightColour;
-        void main(){
-            colour = vec4(1.0);
-        }""", GL.GL_FRAGMENT_SHADER)
-    shaderl = shaders.compileProgram(vertex_shader, fragment_shader_l)
 
 def draw():
     """Put the main drawing code in here."""
@@ -147,7 +137,7 @@ def draw():
     GL.glBindVertexArray(lux)
     mmoodd = modelmatrix * matrix.from_scale([0.2, 0.2, 0.2]) * matrix.from_translation(luxp) * \
         matrix.from_eulers([lasttime, lasttime, lasttime])
-    GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'modelmatrix'), 1, False, mmoodd)
+    GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderl, 'modelmatrix'), 1, False, mmoodd)
     GL.glDrawArrays(GL.GL_QUADS, 0, len(lx))
     GL.glBindVertexArray(0)
 
@@ -182,10 +172,11 @@ def main():
     init()
     terrain = texturit('img/terrain.png')
     blanktex = texturit('img/plain.png')
-    architincture = Thing(*load_vertices('img/sph.ply'), terrain, Material(shaderp, \
-        ambient=(1.0, 0.5, 0.31), diffuse=(1.0, 0.5, 0.31), specular=(0.5, 0.5, 0.5), shininess=32.0))
-    lux = buff_vertices(lx, None)
-    luxp = vector([0.0, 0.0, 0.0])
+    make_lampshade()
+    architincture = Thing(*load_vertices('img/sph.ply'), shaderp, terrain, \
+        Material(ambient=(1.0, 0.5, 0.31), diffuse=(1.0, 0.5, 0.31),
+                 specular=(0.5, 0.5, 0.5), shininess=32.0))
+    lux = Lamp(Thing(*load_vertices('img/cube.ply'), shaderp, blanktex, Material()))
     firsttime = lasttime = glfw.get_time()
     while not glfw.window_should_close(window):
         timedelta = glfw.get_time() - lasttime or glfw.get_timer_frequency()

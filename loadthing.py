@@ -13,30 +13,57 @@ from OpenGL.GL import glBindVertexArray, glGenVertexArrays, glVertexAttribPointe
 class Material:
     """A set of reflection values, declares how shiny something is and how something is shiny.
     Also need to pass a reference to the shader it's to be used in. Apparently."""
-    def __init__(self, shader, ambient=(0.1, 0.1, 0.1), diffuse=(1.0, 1.0, 1.0),
+    def __init__(self, ambient=(0.1, 0.1, 0.1), diffuse=(1.0, 1.0, 1.0),
                  specular=(1.0, 1.0, 1.0), shininess=32.0):
-        self.ambient, self.diffuse, self.specular, self.shininess, self.shader \
-                        = ambient, diffuse, specular, shininess, shader
+        self.ambient, self.diffuse, self.specular, self.shininess, \
+                        = ambient, diffuse, specular, shininess
 
-    def bind(self):
+    def bind(self, shader):
         """Binds a bunch of GLSL Uniforms. Do try not to change their names or anything."""
-        glUniform3f(glGetUniformLocation(self.shader, 'material.ambient'), *self.ambient)
-        glUniform3f(glGetUniformLocation(self.shader, 'material.diffuse'), *self.diffuse)
-        glUniform3f(glGetUniformLocation(self.shader, 'material.specular'), *self.specular)
-        glUniform1f(glGetUniformLocation(self.shader, 'material.shininess'), self.shininess)
+        glUniform3f(glGetUniformLocation(shader, 'material.ambient'), *self.ambient)
+        glUniform3f(glGetUniformLocation(shader, 'material.diffuse'), *self.diffuse)
+        glUniform3f(glGetUniformLocation(shader, 'material.specular'), *self.specular)
+        glUniform1f(glGetUniformLocation(shader, 'material.shininess'), self.shininess)
+
+materials = {
+    # Yeah, it's long, you aren't supposed to read these, it's fine. pylint: disable-msg=C0301
+    'Emerald': Material((0.0215, 0.1745, 0.0215), (0.07568, 0.61424, 0.07568), (0.633, 0.727811, 0.633), 0.6),
+    'Jade': Material((0.135, 0.2225, 0.1575), (0.54, 0.89, 0.63), (0.316228, 0.316228, 0.316228), 0.1),
+    'Obsidian': Material((0.05375, 0.05, 0.06625), (0.18275, 0.17, 0.22525), (0.332741, 0.328634, 0.346435), 0.3),
+    'Pearl': Material((0.25, 0.20725, 0.20725), (1, 0.829, 0.829), (0.296648, 0.296648, 0.296648), 0.088),
+    'Ruby': Material((0.1745, 0.01175, 0.01175), (0.61424, 0.04136, 0.04136), (0.727811, 0.626959, 0.626959), 0.6),
+    'Turquoise': Material((0.1, 0.18725, 0.1745), (0.396, 0.74151, 0.69102), (0.297254, 0.30829, 0.306678), 0.1),
+    'Brass': Material((0.329412, 0.223529, 0.027451), (0.780392, 0.568627, 0.113725), (0.992157, 0.941176, 0.807843), 0.21794872),
+    'Bronze': Material((0.2125, 0.1275, 0.054), (0.714, 0.4284, 0.18144), (0.393548, 0.271906, 0.166721), 0.2),
+    'Chrome': Material((0.25, 0.25, 0.25), (0.4, 0.4, 0.4), (0.774597, 0.774597, 0.774597), 0.6),
+    'Copper': Material((0.19125, 0.0735, 0.0225), (0.7038, 0.27048, 0.0828), (0.256777, 0.137622, 0.086014), 0.1),
+    'Gold': Material((0.24725, 0.1995, 0.0745), (0.75164, 0.60648, 0.22648), (0.628281, 0.555802, 0.366065), 0.4),
+    'Silver': Material((0.19225, 0.19225, 0.19225), (0.50754, 0.50754, 0.50754), (0.508273, 0.508273, 0.508273), 0.4),
+    'Black_Plastic': Material((0.0, 0.0, 0.0), (0.01, 0.01, 0.01), (0.50, 0.50, 0.50), .25),
+    'Cyan_Plastic': Material((0.0, 0.1, 0.06), (0.0, 0.50980392, 0.50980392), (0.50196078, 0.50196078, 0.50196078), .25),
+    'Green_Plastic': Material((0.0, 0.0, 0.0), (0.1, 0.35, 0.1), (0.45, 0.55, 0.45), .25),
+    'Red_Plastic': Material((0.0, 0.0, 0.0), (0.5, 0.0, 0.0), (0.7, 0.6, 0.6), .25),
+    'White_Plastic': Material((0.0, 0.0, 0.0), (0.55, 0.55, 0.55), (0.70, 0.70, 0.70), .25),
+    'Yellow_Plastic': Material((0.0, 0.0, 0.0), (0.5, 0.5, 0.0), (0.60, 0.60, 0.50), .25),
+    'Black_Rubber': Material((0.02, 0.02, 0.02), (0.01, 0.01, 0.01), (0.4, 0.4, 0.4), .078125),
+    'Cyan_Rubber': Material((0.0, 0.05, 0.05), (0.4, 0.5, 0.5), (0.04, 0.7, 0.7), .078125),
+    'Green_Rubber': Material((0.0, 0.05, 0.0), (0.4, 0.5, 0.4), (0.04, 0.7, 0.04), .078125),
+    'Red_Rubber': Material((0.05, 0.0, 0.0), (0.5, 0.4, 0.4), (0.7, 0.04, 0.04), .078125),
+    'White_Rubber': Material((0.05, 0.05, 0.05), (0.5, 0.5, 0.5), (0.7, 0.7, 0.7), .078125),
+    'Yellow_Rubber': Material((0.05, 0.05, 0.0), (0.5, 0.5, 0.4), (0.7, 0.7, 0.04), .078125),}
 
 class Thing:
-    """A Thing: A VAO, a texture, a draw(). Pass in a Vertex Array Object handle, the number of
+    """A Thing: A VAO, a shader, a texture, a draw(). Pass in a Vertex Array Object handle, the number of
     vertices or vertex notation indices it uses, a Texture handle, a material struct,
     and the polygon shape mode to use in the glDrawArrays call."""
-    def __init__(self, vao: int, leng: int, tex: int, mat: Material, shape: int=GL_TRIANGLES):
-        self.vao, self.leng, self.tex, self.mat, self.shape = vao, leng, tex, mat, shape
+    def __init__(self, vao: int, leng: int, shader: int, tex: int, mat: Material, shape: int=GL_TRIANGLES):
+        self.vao, self.shader, self.leng, self.tex, self.mat, self.shape = vao, shader, leng, tex, mat, shape
 
     def draw(self):
         """Binds the vao, binds the texture, draws the vertices."""
         glBindVertexArray(self.vao)
         glBindTexture(GL_TEXTURE_2D, self.tex)
-        self.mat.bind()
+        self.mat.bind(self.shader)
         glDrawArrays(self.shape, 0, self.leng)
         glBindTexture(GL_TEXTURE_2D, 0)
         glBindVertexArray(0)
