@@ -91,45 +91,6 @@ def draw():
     GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
     GL.glBindVertexArray(0)
 
-    origine()
-
-def origine():
-    """Draws a set of lines at 0,0,0"""
-    GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'modelmatrix'),
-                          1, False, matrix.identity())
-
-    GL.glLineWidth(5)
-    # No. I use the spaces for vertex subtype visibility. pylint: disable-msg=C0326
-    x = [[+1, 0, 0,  1.0, 0.0, 0.0,  1.0, 0.0, 0.0,  0, 0,],
-         [-1, 0, 0,  1.0, 0.0, 0.0,  1.0, 0.0, 0.0,  0, 0,],
-         [0, +1, 0,  0.0, 1.0, 0.0,  0.0, 1.0, 0.0,  0, 0,],
-         [0, -1, 0,  0.0, 1.0, 0.0,  0.0, 1.0, 0.0,  0, 0,],
-         [0, 0, +1,  0.0, 0.0, 1.0,  0.0, 0.0, 1.0,  0, 0,],
-         [0, 0, -1,  0.0, 0.0, 1.0,  0.0, 0.0, 1.0,  0, 0,],
-         # And, one for the Chaemera.
-         [*(chaem.pos + chaem.dir + [+0.1, 0, 0]),  1.0, 0.0, 0.0,  1.0, 0.0, 0.0,  0, 0,],
-         [*(chaem.pos + chaem.dir + [-0.1, 0, 0]),  1.0, 0.0, 0.0,  1.0, 0.0, 0.0,  0, 0,],
-         [*(chaem.pos + chaem.dir + [0, +0.1, 0]),  0.0, 1.0, 0.0,  0.0, 1.0, 0.0,  0, 0,],
-         [*(chaem.pos + chaem.dir + [0, -0.1, 0]),  0.0, 1.0, 0.0,  0.0, 1.0, 0.0,  0, 0,],
-         [*(chaem.pos + chaem.dir + [0, 0, +0.1]),  0.0, 0.0, 1.0,  0.0, 0.0, 1.0,  0, 0,],
-         [*(chaem.pos + chaem.dir + [0, 0, -0.1]),  0.0, 0.0, 1.0,  0.0, 0.0, 1.0,  0, 0,]]
-
-    v = vbo.VBO(array(x, 'f'))
-    v.bind()
-    GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, False, 44, v)
-    GL.glVertexAttribPointer(1, 3, GL.GL_FLOAT, False, 44, v+12)
-    GL.glVertexAttribPointer(2, 3, GL.GL_FLOAT, False, 44, v+24)
-    GL.glVertexAttribPointer(3, 2, GL.GL_FLOAT, False, 44, v+36)
-    GL.glEnableVertexAttribArray(0)
-    GL.glEnableVertexAttribArray(1)
-    GL.glEnableVertexAttribArray(2)
-    GL.glEnableVertexAttribArray(3)
-    GL.glBindTexture(GL.GL_TEXTURE_2D, blanktex)
-    GL.glDrawArrays(GL.GL_LINES, 0, len(x))
-    GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
-    v.unbind()
-    v.delete()
-
 def onkey(window, key, code, action, mode):
     """Record keys"""
     if key == glfw.KEY_ESCAPE:

@@ -120,6 +120,41 @@ class Fremv(Chaemera):
         for x in d:
             trykey(x, d[x])
 
+class Raimv(Chaemera):
+    """Moves around, view trailing."""
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.latspe = 4
+        self.rotspe = pi    # Set this to -pi to make it spin the other way.
+        self.states = Enum('states', 'stop forw')
+        self.stat = self.states.stop
+        self._movdir = self._dir
+        self.orgp = self.pos.copy()
+
+    @property
+    def mopvdir(self) -> Vector3:
+        """The direction it is moving."""
+        return self._movdir
+
+    @movdir.setter
+    def movdir(self, value: Vector3) -> None:
+        """Sets the normalised movement direction. If permitted to do so."""
+        if self.stat == self.states.stop:
+            self._movdir = value.normalised
+            self.orgp = self.pos.copy()
+            self.stat = self.states.forw
+
+    def mochae(self, timedelta: float) -> None:
+        """Do moving, but look slowly."""
+        if self.stat == self.states.forw:
+            raise 'not done yet'    # do stuff here
+            tent, rest = self.movdir * self.latspe * timedelta, self.orgp + self.movdir*2 - self.pos
+            if tent.length > rest.length:   # Snap to grid.
+                self.pos = ((self.pos + rest) * 2).round() / 2
+                self.stat = self.states.stop
+            else:
+                self.pos += tent
+
 class Grimv(Chaemera):
     """This one, not so much with the moving."""
     def __init__(self, *args):
