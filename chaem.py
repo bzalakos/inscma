@@ -1,7 +1,7 @@
 """Camera types and subtypes. Lights types and subtypes, maybe."""
 from enum import Enum
 import glfw
-from numpy import clip, pi
+from numpy import clip, pi, arccos
 from pyrr import Vector3, Quaternion, Matrix44
 from OpenGL.GL import glGetUniformLocation, glUniform3f, GL_VERTEX_SHADER, GL_FRAGMENT_SHADER
 from OpenGL.GL.shaders import compileShader, compileProgram
@@ -128,11 +128,11 @@ class Raimv(Chaemera):
         self.rotspe = pi    # Set this to -pi to make it spin the other way.
         self.states = Enum('states', 'stop forw')
         self.stat = self.states.stop
-        self._movdir = self._dir
+        self._movdir = self._dir.copy()
         self.orgp = self.pos.copy()
 
     @property
-    def mopvdir(self) -> Vector3:
+    def movdir(self) -> Vector3:
         """The direction it is moving."""
         return self._movdir
 
@@ -146,8 +146,14 @@ class Raimv(Chaemera):
 
     def mochae(self, timedelta: float) -> None:
         """Do moving, but look slowly."""
+        rent = arccos(clip(self._movdir | self._dir, -1, 1))    # That can happen, apparently.
+        if rent <= self.rotspe:
+            self._dir = self._movdir.copy()     # Snap to alignment, don't risk rounding errors.
+        else:
+            r = Quaternion.from_axis_rotation(self.movdir ^ self.dir, self.rotspe)
+            self._dir = r * self._dir   # move over a little.
+
         if self.stat == self.states.forw:
-            raise 'not done yet'    # do stuff here
             tent, rest = self.movdir * self.latspe * timedelta, self.orgp + self.movdir*2 - self.pos
             if tent.length > rest.length:   # Snap to grid.
                 self.pos = ((self.pos + rest) * 2).round() / 2

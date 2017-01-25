@@ -3,7 +3,7 @@
 # from random import random
 import os
 # from math import #, radians, tan, sin, cos, atan2
-from numpy import array, clip
+from numpy import array, clip, random
 
 from pyrr import Matrix44 as matrix, Vector3 as vector, Quaternion as quaternion
 import OpenGL.GL as GL
@@ -13,7 +13,7 @@ import glfw
 from dots import vs
 
 os.chdir(os.path.dirname(__file__))
-from chaem import Grimv
+from chaem import Raimv
 from loadthing import texturit, buff_vertices
 
 # pylint: disable-msg=W0601
@@ -29,7 +29,7 @@ def init(wid, hig):
     shades()
     rematr(wid, hig)
     modelmtx = matrix.from_scale([2, 2, 2]) * matrix.from_translation([0, 0, -1])
-    chaem = Grimv(keys, deltam)
+    chaem = Raimv(keys, deltam)
     GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'viewmatrix'), 1, False, chaem.lookat())
     GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'modelmatrix'), 1, False, modelmtx)
 
@@ -80,6 +80,8 @@ def shades():
 
 def draw():
     """Put the main drawing code in here."""
+    if keys.get(glfw.KEY_SPACE, False):
+        chaem.movdir = vector([random.random()*2.0 - 1.0, 0.0, random.random()*2.0 - 1.0])
     chaem.mochae(timedelta)
     GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
     GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'modelmatrix'), 1, False, modelmtx)
