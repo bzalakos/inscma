@@ -1,7 +1,7 @@
 """Camera types and subtypes. Lights types and subtypes, maybe."""
 from enum import Enum
 import glfw
-from numpy import clip, pi, arccos
+from numpy import clip, pi, arccos, arctan2
 from pyrr import Vector3, Quaternion, Matrix44
 from OpenGL.GL import glGetUniformLocation, glUniform3f, GL_VERTEX_SHADER, GL_FRAGMENT_SHADER
 from OpenGL.GL.shaders import compileShader, compileProgram
@@ -125,11 +125,16 @@ class Raimv(Chaemera):
     def __init__(self, *args):
         super().__init__(*args)
         self.latspe = 4
-        self.rotspe = pi    # Set this to -pi to make it spin the other way.
+        self.rotspe = -pi    # Set this to +pi to make it spin the other way.
         self.states = Enum('states', 'stop forw')
         self.stat = self.states.stop
         self._movdir = self._dir.copy()
         self.orgp = self.pos.copy()
+
+    @property
+    def heading(self) -> float:
+        """The direction it is moving, but expressed in radians."""
+        return arctan2(self.ure | (self.zre ^ self.movdir), self.zre | self.movdir)
 
     @property
     def movdir(self) -> Vector3:
@@ -146,12 +151,14 @@ class Raimv(Chaemera):
 
     def mochae(self, timedelta: float) -> None:
         """Do moving, but look slowly."""
-        rent = arccos(clip(self._movdir | self._dir, -1, 1))    # That can happen, apparently.
-        if rent <= self.rotspe:
-            self._dir = self._movdir.copy()     # Snap to alignment, don't risk rounding errors.
+        rent = arccos(clip(self.movdir | self.dir, -1, 1))    # Total remaining angle between dirs.
+        comp = self.dir ^ self.movdir   # Comparison reference, for wisity checking.
+        rent = arctan2(self.ure | comp, self.movdir | self.dir)
+        if abs(rent) <= abs(self.rotspe * timedelta):
+            self.dir = self.movdir.copy()     # Snap to alignment, don't risk rounding errors.
         else:
-            r = Quaternion.from_axis_rotation(self.movdir ^ self.dir, self.rotspe)
-            self._dir = r * self._dir   # move over a little.
+            r = Quaternion.from_axis_rotation(self.ure, self.rotspe * timedelta)
+            self.dir = r * self.dir   # move over a little.
 
         if self.stat == self.states.forw:
             tent, rest = self.movdir * self.latspe * timedelta, self.orgp + self.movdir*2 - self.pos

@@ -2,9 +2,10 @@
 Edit that first array array to customise."""
 
 room = [[6, 10, 2, 3],   # x +->
-        [5, 7, 5, 5],   # z
-        [5, 5, 28, 5],  # +
+        [5, 7, 5, 13],   # z
+        [5, 5, 28, 7],  # +
         [12, 8, 10, 9]]  # v
+       # ^ This corner is point (0, 0), maybe.
 
 # Ignore the invalid variable naming. pylint: disable-msg=C0103
 # Y is indeed the up/down axis. x y z r g b u v

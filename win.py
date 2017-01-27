@@ -2,15 +2,14 @@
 # Ignore the invalid variable naming. pylint: disable-msg=C0103
 # from random import random
 import os
-# from math import #, radians, tan, sin, cos, atan2
-from numpy import array, clip, random
+from numpy import array, clip, random, pi
 
 from pyrr import Matrix44 as matrix, Vector3 as vector, Quaternion as quaternion
 import OpenGL.GL as GL
 from OpenGL.arrays import vbo
 from OpenGL.GL import shaders
 import glfw
-from dots import vs
+from dots import vs, room
 
 os.chdir(os.path.dirname(__file__))
 from chaem import Raimv
@@ -80,8 +79,20 @@ def shades():
 
 def draw():
     """Put the main drawing code in here."""
-    if keys.get(glfw.KEY_SPACE, False):
-        chaem.movdir = vector([random.random()*2.0 - 1.0, 0.0, random.random()*2.0 - 1.0])
+    def inc(x, amount=1):
+         return (x + amount) % 4
+    def wlc(x):
+        return (x >> 4) | x
+    if chaem.stat == chaem.states.stop:
+        x, z = int((chaem.pos.z + 1) / 2), int((chaem.pos.x + 1) / 2)
+        spot = room[x][z]
+        dire = inc(int(chaem.heading * 2 / pi))    # Try to get this into room coordinates (0-3)
+        print(spot, dire, flush=True)
+        for x in [1, 0, 3, 2]:    # Check each side, starting with the left.
+            if not wlc(spot) & inc(dire, x):
+                dire = inc(dire, x)
+                break
+        chaem.movdir = quaternion.from_y_rotation(dire * pi / 2) * vector([0., 0., 1.])
     chaem.mochae(timedelta)
     GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
     GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'modelmatrix'), 1, False, modelmtx)
