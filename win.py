@@ -2,7 +2,7 @@
 # Ignore the invalid variable naming. pylint: disable-msg=C0103
 # from random import random
 import os
-from numpy import array, clip, random, pi
+from numpy import clip, pi
 
 from pyrr import Matrix44 as matrix, Vector3 as vector, Quaternion as quaternion
 import OpenGL.GL as GL
@@ -29,6 +29,7 @@ def init(wid, hig):
     rematr(wid, hig)
     modelmtx = matrix.from_scale([2, 2, 2]) * matrix.from_translation([0, 0, -1])
     chaem = Raimv(keys, deltam)
+    chaem.rotspe = -2*pi
     GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'viewmatrix'), 1, False, chaem.lookat())
     GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'modelmatrix'), 1, False, modelmtx)
 
@@ -80,19 +81,18 @@ def shades():
 def draw():
     """Put the main drawing code in here."""
     def inc(x, amount=1):
-         return (x + amount) % 4
+        return (x + amount) % 4
     def wlc(x):
         return (x >> 4) | x
     if chaem.stat == chaem.states.stop:
         x, z = int((chaem.pos.z + 1) / 2), int((chaem.pos.x + 1) / 2)
         spot = room[x][z]
-        dire = inc(int(chaem.heading * 2 / pi))    # Try to get this into room coordinates (0-3)
-        print(spot, dire, flush=True)
+        dire = inc(int(round(chaem.heading * 2 / pi)), 1)    # Get this into room coordinates (0-3)
         for x in [1, 0, 3, 2]:    # Check each side, starting with the left.
-            if not wlc(spot) & inc(dire, x):
+            if not wlc(spot) & (2 ** (inc(dire, x))):
                 dire = inc(dire, x)
                 break
-        chaem.movdir = quaternion.from_y_rotation(dire * pi / 2) * vector([0., 0., 1.])
+        chaem.movdir = quaternion.from_y_rotation((dire - 1) * pi / 2) * vector([0., 0., -1.])
     chaem.mochae(timedelta)
     GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
     GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'modelmatrix'), 1, False, modelmtx)

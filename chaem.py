@@ -1,7 +1,7 @@
 """Camera types and subtypes. Lights types and subtypes, maybe."""
 from enum import Enum
 import glfw
-from numpy import clip, pi, arccos, arctan2
+from numpy import clip, pi, arccos, arctan2, sign
 from pyrr import Vector3, Quaternion, Matrix44
 from OpenGL.GL import glGetUniformLocation, glUniform3f, GL_VERTEX_SHADER, GL_FRAGMENT_SHADER
 from OpenGL.GL.shaders import compileShader, compileProgram
@@ -151,13 +151,14 @@ class Raimv(Chaemera):
 
     def mochae(self, timedelta: float) -> None:
         """Do moving, but look slowly."""
-        rent = arccos(clip(self.movdir | self.dir, -1, 1))    # Total remaining angle between dirs.
+        diff = arccos(clip(self.movdir | self.dir, -1, 1))    # Total remaining angle between dirs.
         comp = self.dir ^ self.movdir   # Comparison reference, for wisity checking.
-        rent = arctan2(self.ure | comp, self.movdir | self.dir)
+        rent = arctan2(self.ure | comp, self.movdir | self.dir) # Absolute angle of movdir?
         if abs(rent) <= abs(self.rotspe * timedelta):
             self.dir = self.movdir.copy()     # Snap to alignment, don't risk rounding errors.
         else:
-            r = Quaternion.from_axis_rotation(self.ure, self.rotspe * timedelta)
+            r = Quaternion.from_axis_rotation(self.ure, self.rotspe * timedelta * sign(diff))
+            print(diff, flush=True)
             self.dir = r * self.dir   # move over a little.
 
         if self.stat == self.states.forw:
