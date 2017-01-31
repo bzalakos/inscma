@@ -125,7 +125,7 @@ class Raimv(Chaemera):
     def __init__(self, *args):
         super().__init__(*args)
         self.latspe = 4
-        self.rotspe = -pi    # Set this to +pi to make it spin the other way.
+        self.rotspe = pi
         self.states = Enum('states', 'stop forw')
         self.stat = self.states.stop
         self._movdir = self._dir.copy()
@@ -151,14 +151,14 @@ class Raimv(Chaemera):
 
     def mochae(self, timedelta: float) -> None:
         """Do moving, but look slowly."""
-        diff = arccos(clip(self.movdir | self.dir, -1, 1))    # Total remaining angle between dirs.
         comp = self.dir ^ self.movdir   # Comparison reference, for wisity checking.
+        diff = arccos(clip(self.movdir | self.dir, -1, 1))    # Total remaining angle between dirs.
         rent = arctan2(self.ure | comp, self.movdir | self.dir) # Absolute angle of movdir?
         if abs(rent) <= abs(self.rotspe * timedelta):
             self.dir = self.movdir.copy()     # Snap to alignment, don't risk rounding errors.
         else:
-            r = Quaternion.from_axis_rotation(self.ure, self.rotspe * timedelta * sign(diff))
-            print(diff, flush=True)
+            # r = Quaternion.from_axis_rotation(self.ure, self.rotspe * timedelta * sign(diff))
+            r = Quaternion.from_axis_rotation(comp, self.rotspe * timedelta)
             self.dir = r * self.dir   # move over a little.
 
         if self.stat == self.states.forw:
