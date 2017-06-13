@@ -3,12 +3,13 @@ from enum import Enum
 import glfw
 from numpy import clip, pi, arccos, arctan2, sign
 from pyrr import Vector3, Quaternion, Matrix44
-from OpenGL.GL import glGetUniformLocation, glUniform3f, GL_VERTEX_SHADER, GL_FRAGMENT_SHADER
+from OpenGL.GL import glGetUniformLocation, glUniform3f, glUseProgram, glUniformMatrix4fv, \
+    GL_VERTEX_SHADER, GL_FRAGMENT_SHADER
 from OpenGL.GL.shaders import compileShader, compileProgram
 from loadthing import Thing
 
 def make_lampshade():
-    """Call this after initialisting glcontext ti set up the lamp shader."""
+    """Call this after initialisting glcontext to set up the lamp shader."""
     global shaderl
     shaderl = compileProgram(
         compileShader(
@@ -221,6 +222,14 @@ class Lamp:
                  ambient=(0.1, 0.1, 0.1), diffuse=(1.0, 1.0, 1.0), specular=(1.0, 1.0, 1.0)):
         self.pos, self.ambient, self.diffuse, self.specular, self.model = \
             pos, ambient, diffuse, specular, model
+
+    def draw(self, reset, modelview):
+        """Binds the shaders and things to draw the lamp itself.
+        Takes a reference to the 'matrix reset' function, and a modelview matrix to draw by."""
+        glUseProgram(shaderl)
+        reset(shaderl)
+        glUniformMatrix4fv(glGetUniformLocation(shaderl, 'modelmatrix'), 1, False, modelview)
+        self.model.draw()
 
     def bind(self):
         """Bind the light values to the shader. Not the lamp shader, the other one."""

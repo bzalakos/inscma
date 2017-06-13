@@ -63,7 +63,8 @@ class Thing:
         """Binds the vao, binds the texture, draws the vertices."""
         glBindVertexArray(self.vao)
         glBindTexture(GL_TEXTURE_2D, self.tex)
-        self.mat.bind(self.shader)
+        if self.mat is not None:
+            self.mat.bind(self.shader)
         glDrawArrays(self.shape, 0, self.leng)
         glBindTexture(GL_TEXTURE_2D, 0)
         glBindVertexArray(0)

@@ -33,12 +33,13 @@ def init():
     projectmatrix = matrix.perspective_projection(whel, wid/hig, 0.01, 100)
     rematr()
 
-def rematr():
-    """(Re)Sets the projection matrices."""
+def rematr(shader=None):
+    """(Re)Sets the projection matrices. Pass in a shader reference if not the default one."""
     # This method has FOV in degrees for some reason???
-    GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'projectmatrix'), 1, False, projectmatrix)
-    GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'viewmatrix'), 1, False, chaem.lookat())
-    GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'modelmatrix'), 1, False, modelmatrix)
+    shader = shader if shader else shaderp
+    GL.glUniformMatrix4fv(GL.glGetUniformLocation(shader, 'projectmatrix'), 1, False, projectmatrix)
+    GL.glUniformMatrix4fv(GL.glGetUniformLocation(shader, 'viewmatrix'), 1, False, chaem.lookat())
+    GL.glUniformMatrix4fv(GL.glGetUniformLocation(shader, 'modelmatrix'), 1, False, modelmatrix)
 
 def resiz(window, wid, hig):
     """Handles viewport resizing on window resize."""
@@ -50,7 +51,6 @@ def resiz(window, wid, hig):
 def shades():
     """Set up the Vertex and Fragment Shaders."""
     global shaderp
-
     shaderp = shaders.compileProgram(
         shaders.compileShader(
             """#version 330 core
@@ -131,15 +131,9 @@ def draw():
     GL.glUniform3f(GL.glGetUniformLocation(shaderp, 'viewpos'), *chaem.pos)
     rematr()
     architincture.draw()
-
-    GL.glUseProgram(shaderl)
-    rematr()
-    GL.glBindVertexArray(lux)
     mmoodd = modelmatrix * matrix.from_scale([0.2, 0.2, 0.2]) * matrix.from_translation(luxp) * \
         matrix.from_eulers([lasttime, lasttime, lasttime])
-    GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderl, 'modelmatrix'), 1, False, mmoodd)
-    GL.glDrawArrays(GL.GL_QUADS, 0, len(lx))
-    GL.glBindVertexArray(0)
+    lux.draw(rematr, mmoodd)
 
 def onkey(window, key, code, action, mode):
     """Record keys"""
@@ -176,7 +170,7 @@ def main():
     architincture = Thing(*load_vertices('img/sph.ply'), shaderp, terrain, \
         Material(ambient=(1.0, 0.5, 0.31), diffuse=(1.0, 0.5, 0.31),
                  specular=(0.5, 0.5, 0.5), shininess=32.0))
-    lux = Lamp(Thing(*load_vertices('img/cube.ply'), shaderp, blanktex, Material()))
+    lux = Lamp(Thing(*load_vertices('img/cube.ply'), shaderp, blanktex, None, GL.GL_QUADS))
     firsttime = lasttime = glfw.get_time()
     while not glfw.window_should_close(window):
         timedelta = glfw.get_time() - lasttime or glfw.get_timer_frequency()
