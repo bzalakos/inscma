@@ -8,7 +8,7 @@ from numpy import clip
 from pyrr import Matrix44 as matrix, Vector3 as vector#, Quaternion as quaternion
 import OpenGL.GL as GL
 from OpenGL.GL import shaders
-import glfw
+import pygame
 
 from chaem import Fremv, Lamp, make_lampshade
 from loadthing import texturit, buff_vertices, load_vertices, Thing, Material
@@ -25,11 +25,11 @@ def init():
     GL.glEnable(GL.GL_DEPTH_TEST)
     GL.glShadeModel(GL.GL_SMOOTH)
     shades()
-    chaem = Fremv(keys, deltam)
+    chaem = Fremv((), deltam)
     GL.glUniform3f(GL.glGetUniformLocation(shaderp, 'lightColour'), *[1.0, 1.0, 1.0])
     modelmatrix = matrix.from_scale([2, 2, 2]) * matrix.from_translation([0, 0, -1])
-    wid, hig = glfw.get_window_size(window)
-    hig = hig if hig else 1
+    wid, hig = window.get_size()
+    hig = hig or 1
     projectmatrix = matrix.perspective_projection(whel, wid/hig, 0.01, 100)
     rematr()
 
@@ -41,7 +41,7 @@ def rematr(shader=None):
     GL.glUniformMatrix4fv(GL.glGetUniformLocation(shader, 'viewmatrix'), 1, False, chaem.lookat())
     GL.glUniformMatrix4fv(GL.glGetUniformLocation(shader, 'modelmatrix'), 1, False, modelmatrix)
 
-def resiz(window, wid, hig):
+def resiz(wid, hig):
     """Handles viewport resizing on window resize."""
     if hig == 0:
         hig = 1
@@ -135,34 +135,19 @@ def draw():
         matrix.from_eulers([lasttime, lasttime, lasttime])
     lux.draw(rematr, mmoodd)
 
-def onkey(window, key, code, action, mode):
-    """Record keys"""
-    if key == glfw.KEY_ESCAPE:
-        glfw.set_window_should_close(window, True)
-    keys[key] = bool(action)   # PRESS is 1, RELEASE is zero. Maps nicely enough.
-
-def onsc(window, xof, yof):
+def onsc(yof):
     """Wheels. """
     global whel, projectmatrix
-    sz = glfw.get_window_size(window)
+    sz = window.get_size()
     whel = clip(whel - yof, 1, 180)
     projectmatrix = matrix.perspective_projection(whel, sz[0] / sz[1], 0.01, 100)
 
 def main():
     """Do all this upon running the script."""
-    global window, firsttime, lasttime, timedelta, blanktex, architincture, \
-        lux, luxp, keys, oldmouse, deltam, whel
-    glfw.init()
-    window = glfw.create_window(640, 480, 'Test', None, None)
-    oldmouse = (320, 240)
-    whel = 75
-    glfw.set_input_mode(window, glfw.CURSOR, glfw.CURSOR_DISABLED)
-    glfw.make_context_current(window)
-    glfw.set_window_size_callback(window, resiz)
-    glfw.set_key_callback(window, onkey)
-    glfw.set_scroll_callback(window, onsc)
-    keys = {}
-    deltam = [0, 0]
+    global window, lasttime, timedelta, blanktex, architincture, lux, luxp, oldmouse, deltam, whel
+    pygame.init()
+    window = pygame.display.set_mode((640, 480), pygame.OPENGL|pygame.DOUBLEBUF|pygame.RESIZABLE)
+    oldmouse, deltam, whel, lasttime = (320, 240), [0, 0], 75, 0
     init()
     terrain = texturit('img/terrain.png')
     blanktex = texturit('img/plain.png')
@@ -171,17 +156,24 @@ def main():
         Material(ambient=(1.0, 0.5, 0.31), diffuse=(1.0, 0.5, 0.31),
                  specular=(0.5, 0.5, 0.5), shininess=32.0))
     lux = Lamp(Thing(*load_vertices('img/cube.ply'), shaderp, blanktex, None, GL.GL_QUADS))
-    firsttime = lasttime = glfw.get_time()
-    while not glfw.window_should_close(window):
-        timedelta = glfw.get_time() - lasttime or glfw.get_timer_frequency()
-        lasttime = glfw.get_time()
-        tmpm = glfw.get_cursor_pos(window)
+    clock = pygame.time.Clock()
+    while True:
+        for evn in pygame.event.get():
+            if evn.type == pygame.QUIT or evn.type == pygame.KEYDOWN and evn.key == pygame.K_ESCAPE:
+                pygame.quit()
+                return
+            if evn.type == pygame.VIDEORESIZE:
+                resiz(*evn.size)
+            if evn.type == pygame.MOUSEBUTTONDOWN and evn.button in (4, 5):
+                onsc(-1 if evn.button == 4 else 1)
+        timedelta = clock.tick() / 1000
+        lasttime += timedelta
+        chaem.keys = pygame.key.get_pressed()
+        tmpm = pygame.mouse.get_pos()
         deltam[0], deltam[1] = tmpm[0] - oldmouse[0], tmpm[1] - oldmouse[1]
         oldmouse = tmpm
-        glfw.poll_events()
         draw()
-        glfw.swap_buffers(window)
-    glfw.terminate()
+        pygame.display.flip()
 
 if __name__ == '__main__':
     main()

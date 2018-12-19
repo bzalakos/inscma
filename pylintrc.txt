@@ -1,3 +1,4 @@
 [MESSAGES CONTROL]
-disable=W0614
+disable=W0614,E1101
 #W0614 is unused imports. Used it because of the from GL import * things.
+#E1101 is module doesn't have that member. Pygame keeps secrets from Pylint, I guess.

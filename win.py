@@ -8,7 +8,7 @@ from pyrr import Matrix44 as matrix, Vector3 as vector, Quaternion as quaternion
 import OpenGL.GL as GL
 from OpenGL.arrays import vbo
 from OpenGL.GL import shaders
-import glfw
+import pygame
 from dots import vs, room
 
 os.chdir(os.path.dirname(__file__))
@@ -27,8 +27,8 @@ def init(wid, hig):
     GL.glShadeModel(GL.GL_SMOOTH)
     shades()
     rematr(wid, hig)
-    modelmtx = matrix.from_scale([2, 2, 2]) * matrix.from_translation([0, 0, -1])
-    chaem = Raimv(keys, deltam)
+    modelmtx = matrix.from_scale([2, 2, 2]) * matrix.from_translation([0, 0, -.5])
+    chaem = Raimv((), deltam)
     chaem.rotspe = 2*pi
     GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'viewmatrix'), 1, False, chaem.lookat())
     GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'modelmatrix'), 1, False, modelmtx)
@@ -38,10 +38,10 @@ def rematr(wid, hig):
     if hig == 0:
         hig = 1
     # This method has FOV in degrees for some reason???
-    pm = matrix.perspective_projection(75, wid/hig, 0.01, 100)
+    pm = matrix.perspective_projection(whel, wid/hig, 0.01, 100)
     GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'projectmatrix'), 1, False, pm)
 
-def resiz(window, wid, hig):
+def resiz(wid, hig):
     """Handles viewport resizing on window resize."""
     if hig == 0:
         hig = 1
@@ -104,50 +104,40 @@ def draw():
     GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
     GL.glBindVertexArray(0)
 
-def onkey(window, key, code, action, mode):
-    """Record keys"""
-    if key == glfw.KEY_ESCAPE:
-        glfw.set_window_should_close(window, True)
-    keys[key] = bool(action)   # PRESS is 1, RELEASE is zero. Maps nicely enough.
-
-def onsc(window, xof, yof):
+def onsc(window, yof):
     """Wheels. """
     global whel
-    sz = glfw.get_window_size(window)
+    sz = window.get_size()
     whel = clip(whel - yof, 1, 180)
     pm = matrix.perspective_projection(whel, sz[0] / sz[1], 0.01, 100)
     GL.glUniformMatrix4fv(GL.glGetUniformLocation(shaderp, 'projectmatrix'), 1, False, pm)
 
 def main():
     """Do all this upon running the script."""
-    global firsttime, lasttime, timedelta, terrain, blanktex, architincture, \
-        keys, oldmouse, deltam, whel
-    glfw.init()
-    window = glfw.create_window(640, 480, 'Test', None, None)
-    oldmouse = (320, 240)
-    whel = 75
-    glfw.set_input_mode(window, glfw.CURSOR, glfw.CURSOR_DISABLED)
-    glfw.make_context_current(window)
-    glfw.set_window_size_callback(window, resiz)
-    glfw.set_key_callback(window, onkey)
-    glfw.set_scroll_callback(window, onsc)
-    keys = {}
-    deltam = [0, 0]
+    global timedelta, terrain, blanktex, architincture, whel, deltam
+    pygame.init()
+    window = pygame.display.set_mode((640, 480), pygame.OPENGL|pygame.DOUBLEBUF|pygame.RESIZABLE)
+    deltam, whel =  [0, 0], 75
     init(640, 480)
     terrain = texturit('img/terrain.png')
     blanktex = texturit('img/plain.png')
     architincture = buff_vertices(vs, None)
-    firsttime = lasttime = glfw.get_time()
-    while not glfw.window_should_close(window):
-        timedelta = glfw.get_time() - lasttime or glfw.get_timer_frequency()
-        lasttime = glfw.get_time()
-        tmpm = glfw.get_cursor_pos(window)
-        deltam[0], deltam[1] = tmpm[0] - oldmouse[0], tmpm[1] - oldmouse[1]
+    clock = pygame.time.Clock()
+    while True:
+        for evn in pygame.event.get():
+            if evn.type == pygame.QUIT or evn.type == pygame.KEYDOWN and evn.key == pygame.K_ESCAPE:
+                pygame.quit()
+                return
+            if evn.type == pygame.VIDEORESIZE:
+                resiz(*evn.size)
+            if evn.type == pygame.MOUSEBUTTONDOWN and evn.button in (4, 5):
+                onsc(window, -1 if evn.button == 4 else 1)
+        timedelta = clock.tick() / 1000
+        chaem.keys = pygame.key.get_pressed()
+        tmpm = pygame.mouse.get_pos()
         oldmouse = tmpm
-        glfw.poll_events()
-        glfw.swap_buffers(window)
         draw()
-    glfw.terminate()
+        pygame.display.flip()
 
 if __name__ == '__main__':
     main()

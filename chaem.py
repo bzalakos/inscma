@@ -1,6 +1,6 @@
 """Camera types and subtypes. Lights types and subtypes, maybe."""
 from enum import Enum
-import glfw
+from pygame import K_q, K_w, K_e, K_a, K_s, K_d
 from numpy import clip, pi, arccos, arctan2, sign
 from pyrr import Vector3, Quaternion, Matrix44
 from OpenGL.GL import glGetUniformLocation, glUniform3f, glUseProgram, glUniformMatrix4fv, \
@@ -33,8 +33,8 @@ def make_lampshade():
 
 class Chaemera:
     """Moves around, looks at things."""
-    def __init__(self, keys: dict, deltam: list):
-        self.keys = keys    # Hold on to these. Mutable structures, so it should be fine.
+    def __init__(self, keys: tuple, deltam: list):
+        self.keys = keys    # Not mutable, remember to update it in the main loop, I guess
         self.deltam = deltam
         self.pos = Vector3([0.0, 0.0, 5.0])
         self.ure = Vector3([0.0, 1.0, 0.0])
@@ -93,7 +93,7 @@ class Chaemera:
 
     def lookat(self) -> Matrix44:
         """Gets the lookat matrix from the posdir vectors."""
-        return Matrix44.from_lookat(self.pos, self.pos + self.dir, self.ure)
+        return Matrix44.look_at(self.pos, self.pos + self.dir, self.ure)
 
 class Fremv(Chaemera):
     """Chaemerae that can actually move around."""
@@ -106,16 +106,16 @@ class Fremv(Chaemera):
         """Move the thing according to a whole mess of Global State."""
         # Don't really want to annotate all these private minifunctions. pylint: disable-msg=C0111
         def trykey(code, todo):
-            if self.keys.get(code, False):
+            if self.keys[code]:
                 todo()
         def ad(x):
             def da():
                 self.pos += x * self.latspe * timedelta
             return da
         # Back in my day we could just use a switch statement.
-        d = {glfw.KEY_W: ad(self.dir), glfw.KEY_S: ad(-self.dir),
-             glfw.KEY_A: ad(-self.myx), glfw.KEY_D: ad(self.myx),
-             glfw.KEY_Q: ad(self.myy), glfw.KEY_E: ad(-self.myy),}
+        d = {K_w: ad(self.dir), K_s: ad(-self.dir),
+             K_a: ad(-self.myx), K_d: ad(self.myx),
+             K_q: ad(self.myy), K_e: ad(-self.myy),}
         self.pitya(self.pitch - self.deltam[1] * self.rotspe * timedelta,
                    self.yaw - self.deltam[0] * self.rotspe * timedelta)
         for x in d:
@@ -153,13 +153,11 @@ class Raimv(Chaemera):
     def mochae(self, timedelta: float) -> None:
         """Do moving, but look slowly."""
         comp = self.dir ^ self.movdir   # Comparison reference, for wisity checking.
-        diff = arccos(clip(self.movdir | self.dir, -1, 1))    # Total remaining angle between dirs.
         rent = arctan2(self.ure | comp, self.movdir | self.dir) # Absolute angle of movdir?
         if abs(rent) <= abs(self.rotspe * timedelta):
             self.dir = self.movdir.copy()     # Snap to alignment, don't risk rounding errors.
         else:
-            # r = Quaternion.from_axis_rotation(self.ure, self.rotspe * timedelta * sign(diff))
-            r = Quaternion.from_axis_rotation(comp, self.rotspe * timedelta)
+            r = Quaternion.from_axis_rotation(comp if comp.length else self.ure, self.rotspe * timedelta)
             self.dir = r * self.dir   # move over a little.
 
         if self.stat == self.states.forw:
@@ -183,7 +181,7 @@ class Grimv(Chaemera):
 
     def mochae(self, timedelta: float) -> None:
         """More restrictions, yet harder to describe."""
-        trykey = lambda x: self.keys.get(x, False)
+        trykey = lambda x: self.keys[x]
         if self.stat == self.states.forw:
             tent, rest = self.dir * self.latspe * timedelta, self.orgp + self.dir*2 - self.pos
             if tent.length > rest.length:   # Snap to grid.
@@ -206,13 +204,13 @@ class Grimv(Chaemera):
             else:
                 self.yaw += tent
         if self.stat == self.states.stop:
-            if trykey(glfw.KEY_W):
+            if trykey(K_w):
                 self.orgp = self.pos.copy()
                 self.stat = self.states.forw
-            elif trykey(glfw.KEY_A):
+            elif trykey(K_a):
                 self.ancy = self.yaw
                 self.stat = self.states.left
-            elif trykey(glfw.KEY_D):
+            elif trykey(K_d):
                 self.ancy = self.yaw
                 self.stat = self.states.righ
 
